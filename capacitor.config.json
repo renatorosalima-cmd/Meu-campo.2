@@ -1,0 +1,8 @@
+{
+  "appId": "com.meucampo.app",
+  "appName": "Meu Campo",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
