@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Meu Campo - Relatório de Serviço</title>
+  
+  <!-- Trava de Tema Claro Fixo -->
+  <style>
+    :root { color-scheme: light !important; }
+    html, body { background-color: #f8fafc !important; color: #0f172a !important; }
+  </style>
+
+  <!-- Tailwind CSS v4 CDN -->
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Capacitor JS Bridge (Injetado automaticamente em ambiente nativo) -->
+  <script src="capacitor.js" onerror="console.log('Rodando em modo Web Browser')"></script>
+
+  <style>
+    .dynamic-bg { background-color: var(--theme-primary, #0d9488); }
+    .dynamic-text { color: var(--theme-primary, #0d9488); }
+    .dynamic-border { border-color: var(--theme-primary, #0d9488); }
+    .dynamic-ring { --tw-ring-color: var(--theme-primary, #0d9488); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans min-h-screen pb-20 selection:bg-teal-500 selection:text-white">
+
+  <!-- APP CONTAINER -->
+  <div id="app" class="max-w-md mx-auto bg-white min-h-screen shadow-lg flex flex-col relative">
+
+    <!-- CABEÇALHO -->
+    <header class="dynamic-bg text-white p-5 rounded-b-3xl shadow-md transition-colors duration-300">
+      <div class="flex justify-between items-center mb-3">
+        <div>
+          <h1 class="text-xl font-bold flex items-center gap-2">
+            <i class="fa-solid font-bold fa-book-open"></i> Meu Campo
+          </h1>
+          <p id="userGreeting" class="text-xs opacity-90 mt-0.5">Olá, Publicador</p>
+        </div>
+        <button onclick="openConfigModal()" class="p-2.5 bg-white/20 hover:bg-white/30 rounded-full transition-all text-sm backdrop-blur-sm" title="Configurações">
+          <i class="fa-solid fa-gear"></i>
+        </button>
+      </div>
+
+      <!-- Card Proporção / Meta -->
+      <div class="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 mt-2">
+        <div class="flex justify-between items-center text-xs font-medium mb-1.5">
+          <span>Progresso Mensal</span>
+          <span id="goalProgressText">0h / 0h</span>
+        </div>
+        <div class="w-full bg-black/20 rounded-full h-2.5 overflow-hidden">
+          <div id="goalProgressBar" class="bg-white h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- CRONÔMETRO FLUTUANTE / FIXO -->
+    <section class="px-5 -mt-4 mb-4 z-10">
+      <div class="bg-white rounded-2xl p-4 shadow-md border border-slate-100 flex items-center justify-between">
+        <div>
+          <span class="text-xs text-slate-500 font-medium block">Cronômetro de Campo</span>
+          <span id="timerDisplay" class="text-2xl font-black font-mono tracking-wider text-slate-800">00:00:00</span>
+        </div>
+        <div class="flex gap-2">
+          <button id="btnStartTimer" onclick="toggleTimer()" class="dynamic-bg text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm text-sm active:scale-95 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-play" id="timerIcon"></i> <span id="timerBtnText">Iniciar</span>
+          </button>
+          <button id="btnResetTimer" onclick="resetTimer()" class="bg-slate-100 text-slate-600 px-3 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-200 active:scale-95 transition-all hidden">
+            <i class="fa-solid fa-rotate-left"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- REGISTRO DIÁRIO -->
+    <main class="flex-1 px-5 space-y-5">
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-4">
+        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
+          <h2 class="font-bold text-slate-700 text-sm flex items-center gap-2">
+            <i class="fa-regular fa-calendar-plus dynamic-text"></i> Registrar Atividade
+          </h2>
+          <input type="date" id="entryDate" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 dynamic-ring">
+        </div>
+
+        <!-- Modalidades (Horas/Minutos) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1.5">Modalidade de Pregação</label>
+          <div class="grid grid-cols-2 gap-2">
+            <select id="entryCategory" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 dynamic-ring">
+              <option value="casaEmCasa">Casa em Casa</option>
+              <option value="carrinho">Carrinho / Display</option>
+              <option value="cartas">Testemunho por Cartas</option>
+              <option value="estudo">Estudo Bíblico</option>
+              <option value="outros">Outros</option>
+            </select>
+            <div class="flex items-center bg-white border border-slate-300 rounded-xl px-3 py-1">
+              <input type="number" id="entryMinutes" min="1" placeholder="Minutos" class="w-full text-xs font-semibold focus:outline-none bg-transparent">
+              <span class="text-xs text-slate-400 font-medium">min</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outras Métricas -->
+        <div class="grid grid-cols-3 gap-2 pt-1">
+          <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
+            <span class="block text-[10px] font-semibold text-slate-400 uppercase">Publ.</span>
+            <input type="number" id="entryPubs" value="0" min="0" class="w-full text-center font-bold text-slate-700 text-sm focus:outline-none bg-transparent">
+          </div>
+          <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
+            <span class="block text-[10px] font-semibold text-slate-400 uppercase">Vídeos</span>
+            <input type="number" id="entryVideos" value="0" min="0" class="w-full text-center font-bold text-slate-700 text-sm focus:outline-none bg-transparent">
+          </div>
+          <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
+            <span class="block text-[10px] font-semibold text-slate-400 uppercase">Revisitas</span>
+            <input type="number" id="entryRevisitas" value="0" min="0" class="w-full text-center font-bold text-slate-700 text-sm focus:outline-none bg-transparent">
+          </div>
+        </div>
+
+        <button onclick="saveDailyEntry()" class="w-full dynamic-bg text-white py-2.5 rounded-xl font-semibold text-sm shadow-sm active:scale-98 transition-all flex justify-center items-center gap-2">
+          <i class="fa-solid fa-plus text-xs"></i> Adicionar ao Relatório
+        </button>
+      </div>
+
+      <!-- RESUMO MENSAL E ENVIOS -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
+        <div class="flex justify-between items-center">
+          <h2 class="font-bold text-slate-800 text-sm">Resumo de <span id="currentMonthName" class="dynamic-text">Este Mês</span></h2>
+          <input type="month" id="filterMonth" onchange="renderMonthlySummary()" class="text-xs bg-slate-100 border-none rounded-lg px-2 py-1 font-semibold text-slate-600">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-slate-700 text-xs font-medium">
+          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Total Horas:</span> <strong id="sumHours" class="text-slate-900">0h 0m</strong></div>
+          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Publicações:</span> <strong id="sumPubs" class="text-slate-900">0</strong></div>
+          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Vídeos:</span> <strong id="sumVideos" class="text-slate-900">0</strong></div>
+          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Revisitas:</span> <strong id="sumRevisitas" class="text-slate-900">0</strong></div>
+        </div>
+
+        <!-- Botões de Envio de Relatório -->
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button onclick="sendWhatsAppReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+            <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+          </button>
+          <button onclick="copyForHourglass()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-3 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+            <i class="fa-solid fa-copy text-sm"></i> Hourglass
+          </button>
+        </div>
+      </div>
+
+      <!-- HISTÓRICO DE REGISTROS DO MÊS -->
+      <div class="space-y-2">
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Histórico do Mês</h3>
+        <div id="entriesList" class="space-y-2 pb-6">
+          <!-- Injetado dinamicamente via JS -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÕES -->
+  <div id="configModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-slate-800 text-base">Configurações</h3>
+        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- Perfil -->
+      <div class="space-y-3">
+        <h4 class="text-xs font-bold text-slate-400 uppercase">Dados do Publicador</h4>
+        <div>
+          <label class="block text-xs text-slate-600 font-medium mb-1">Nome Completo</label>
+          <input type="text" id="cfgName" placeholder="Seu nome" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 dynamic-ring">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs text-slate-600 font-medium mb-1">Congregação</label>
+            <input type="text" id="cfgCongregation" placeholder="Nome" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 dynamic-ring">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-600 font-medium mb-1">Meta (Horas)</label>
+            <input type="number" id="cfgGoal" placeholder="Ex: 50" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 dynamic-ring">
+          </div>
+        </div>
+      </div>
+
+      <!-- Personalização de Cores -->
+      <div class="space-y-2 border-t border-slate-100 pt-3">
+        <h4 class="text-xs font-bold text-slate-400 uppercase">Tema do Aplicativo</h4>
+        <div class="flex gap-3 justify-between items-center bg-slate-50 p-2.5 rounded-xl">
+          <button onclick="setTheme('#0d9488')" class="w-7 h-7 rounded-full bg-teal-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
+          <button onclick="setTheme('#2563eb')" class="w-7 h-7 rounded-full bg-blue-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
+          <button onclick="setTheme('#7c3aed')" class="w-7 h-7 rounded-full bg-purple-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
+          <button onclick="setTheme('#e11d48')" class="w-7 h-7 rounded-full bg-rose-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
+          <input type="color" id="customColorPicker" onchange="setTheme(this.value)" class="w-7 h-7 rounded-full cursor-pointer border-0 bg-transparent">
+        </div>
+      </div>
+
+      <!-- Lembrete Diário -->
+      <div class="space-y-2 border-t border-slate-100 pt-3">
+        <h4 class="text-xs font-bold text-slate-400 uppercase">Lembrete Diário</h4>
+        <button onclick="requestNotificationPermission()" class="w-full bg-slate-100 text-slate-700 py-2 rounded-xl font-semibold text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
+          <i class="fa-regular fa-bell"></i> Ativar Lembrete (08:00)
+        </button>
+      </div>
+
+      <!-- Backup de Dados -->
+      <div class="space-y-2 border-t border-slate-100 pt-3">
+        <h4 class="text-xs font-bold text-slate-400 uppercase">Backup de Dados</h4>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="exportData()" class="bg-slate-800 text-white py-2 rounded-xl font-semibold text-xs hover:bg-slate-900 transition-all flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-download"></i> Exportar
+          </button>
+          <label class="bg-slate-100 text-slate-700 py-2 rounded-xl font-semibold text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center">
+            <i class="fa-solid fa-upload"></i> Importar
+            <input type="file" id="importFileInput" onchange="importData(event)" accept=".json" class="hidden">
+          </label>
+        </div>
+      </div>
+
+      <button onclick="saveConfig()" class="w-full dynamic-bg text-white py-3 rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all mt-2">
+        Salvar Alterações
+      </button>
+    </div>
+  </div>
+
+  <!-- SCRIPT PRINCIPAL E LÓGICA LOGISTICA -->
+  <script>
+    // --- ESTADO DA APLICAÇÃO ---
+    let appState = {
+      profile: { name: '', congregation: '', goal: 0, theme: '#0d9488' },
+      entries: [],
+      timer: { running: false, startTime: 0, accumulatedSeconds: 0 }
+    };
+
+    let timerInterval = null;
+
+    // --- INICIALIZAÇÃO ---
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLocalStorage();
+      initDates();
+      applyTheme(appState.profile.theme);
+      renderUI();
+      restoreTimerState();
+    });
+
+    function initDates() {
+      const today = new Date().toISOString().split('T')[0];
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      document.getElementById('entryDate').value = today;
+      document.getElementById('filterMonth').value = currentMonth;
+    }
+
+    // --- CARREGAR / SALVAR LOCALSTORAGE ---
+    function loadLocalStorage() {
+      const savedProfile = localStorage.getItem('mc_profile');
+      if (savedProfile) appState.profile = JSON.parse(savedProfile);
+      
+      const savedEntries = localStorage.getItem('mc_entries');
+      if (savedEntries) appState.entries = JSON.parse(savedEntries);
+
+      const savedTimer = localStorage.getItem('mc_timer');
+      if (savedTimer) appState.timer = JSON.parse(savedTimer);
+    }
+
+    function saveLocalStorage() {
+      localStorage.setItem('mc_profile', JSON.stringify(appState.profile));
+      localStorage.setItem('mc_entries', JSON.stringify(appState.entries));
+      localStorage.setItem('mc_timer', JSON.stringify(appState.timer));
+    }
+
+    // --- SISTEMA DE TEMAS ---
+    function setTheme(hexColor) {
+      appState.profile.theme = hexColor;
+      applyTheme(hexColor);
+      saveLocalStorage();
+    }
+
+    function applyTheme(hexColor) {
+      document.documentElement.style.setProperty('--theme-primary', hexColor || '#0d9488');
+    }
+
+    // --- RENDERIZAÇÃO DE INTERFACE ---
+    function renderUI() {
+      document.getElementById('userGreeting').innerText = appState.profile.name 
+        ? `Olá, ${appState.profile.name}` 
+        : 'Olá, Publicador';
+      
+      renderMonthlySummary();
+    }
+
+    function renderMonthlySummary() {
+      const selectedMonth = document.getElementById('filterMonth').value;
+      const filteredEntries = appState.entries.filter(e => e.date.startsWith(selectedMonth));
+      
+      let totalMinutes = 0, pubs = 0, videos = 0, revisitas = 0;
+
+      filteredEntries.forEach(e => {
+        totalMinutes += (parseInt(e.minutes) || 0);
+        pubs += (parseInt(e.pubs) || 0);
+        videos += (parseInt(e.videos) || 0);
+        revisitas += (parseInt(e.revisitas) || 0);
+      });
+
+      const hours = Math.floor(totalMinutes / 60);
+      const mins = totalMinutes % 60;
+
+      document.getElementById('sumHours').innerText = `${hours}h ${mins}m`;
+      document.getElementById('sumPubs').innerText = pubs;
+      document.getElementById('sumVideos').innerText = videos;
+      document.getElementById('sumRevisitas').innerText = revisitas;
+
+      // Progresso da Meta
+      const goal = appState.profile.goal || 0;
+      document.getElementById('goalProgressText').innerText = `${hours}h / ${goal}h`;
+      const percent = goal > 0 ? Math.min(100, Math.round((hours / goal) * 100)) : 0;
+      document.getElementById('goalProgressBar').style.width = `${percent}%`;
+
+      // RenderLista
+      const listContainer = document.getElementById('entriesList');
+      listContainer.innerHTML = '';
+
+      if (filteredEntries.length === 0) {
+        listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-4">Nenhum registro para este mês.</p>`;
+        return;
+      }
+
+      filteredEntries.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(entry => {
+        const entryHours = Math.floor(entry.minutes / 60);
+        const entryMins = entry.minutes % 60;
+        const formattedTime = entryHours > 0 ? `${entryHours}h ${entryMins}m` : `${entryMins}m`;
+
+        const div = document.createElement('div');
+        div.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-2xs flex justify-between items-center text-xs";
+        div.innerHTML = `
+          <div>
+            <span class="font-bold text-slate-700">${formatDateBR(entry.date)}</span>
+            <span class="text-slate-400 block text-[10px] capitalize">${entry.category}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="font-bold dynamic-text">${formattedTime}</span>
+            <button onclick="deleteEntry('${entry.id}')" class="text-slate-300 hover:text-rose-500 p-1"><i class="fa-solid fa-trash-can"></i></button>
+          </div>
+        `;
+        listContainer.appendChild(div);
+      });
+    }
+
+    function formatDateBR(dateStr) {
+      const parts = dateStr.split('-');
+      return `${parts[2]}/${parts[1]}`;
+    }
+
+    // --- REGISTRO DE DADOS ---
+    function saveDailyEntry() {
+      const date = document.getElementById('entryDate').value;
+      const category = document.getElementById('entryCategory').value;
+      const minutes = parseInt(document.getElementById('entryMinutes').value) || 0;
+      const pubs = parseInt(document.getElementById('entryPubs').value) || 0;
+      const videos = parseInt(document.getElementById('entryVideos').value) || 0;
+      const revisitas = parseInt(document.getElementById('entryRevisitas').value) || 0;
+
+      if (!date || minutes <= 0) {
+        alert("Por favor, informe a data e a quantidade de minutos praticados.");
+        return;
+      }
+
+      const newEntry = {
+        id: Date.now().toString(),
+        date,
+        category,
+        minutes,
+        pubs,
+        videos,
+        revisitas
+      };
+
+      appState.entries.push(newEntry);
+      saveLocalStorage();
+      renderMonthlySummary();
+
+      // Reset inputs
+      document.getElementById('entryMinutes').value = '';
+      document.getElementById('entryPubs').value = '0';
+      document.getElementById('entryVideos').value = '0';
+      document.getElementById('entryRevisitas').value = '0';
+    }
+
+    function deleteEntry(id) {
+      if (confirm("Deseja remover este registro?")) {
+        appState.entries = appState.entries.filter(e => e.id !== id);
+        saveLocalStorage();
+        renderMonthlySummary();
+      }
+    }
+
+    // --- CRONÔMETRO PERSISTENTE ---
+    function toggleTimer() {
+      if (appState.timer.running) {
+        // Pausar
+        appState.timer.accumulatedSeconds += Math.floor((Date.now() - appState.timer.startTime) / 1000);
+        appState.timer.running = false;
+        clearInterval(timerInterval);
+        
+        // Auto-preencher minutos
+        const mins = Math.floor(appState.timer.accumulatedSeconds / 60);
+        if (mins > 0) {
+          document.getElementById('entryMinutes').value = mins;
+        }
+      } else {
+        // Iniciar
+        appState.timer.startTime = Date.now();
+        appState.timer.running = true;
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+      }
+      saveLocalStorage();
+      updateTimerUI();
+    }
+
+    function resetTimer() {
+      appState.timer = { running: false, startTime: 0, accumulatedSeconds: 0 };
+      clearInterval(timerInterval);
+      saveLocalStorage();
+      updateTimerDisplay();
+      updateTimerUI();
+    }
+
+    function restoreTimerState() {
+      if (appState.timer.running) {
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+      }
+      updateTimerDisplay();
+      updateTimerUI();
+    }
+
+    function updateTimerDisplay() {
+      let totalSecs = appState.timer.accumulatedSeconds;
+      if (appState.timer.running) {
+        totalSecs += Math.floor((Date.now() - appState.timer.startTime) / 1000);
+      }
+
+      const h = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
+      const m = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+      const s = String(totalSecs % 60).padStart(2, '0');
+
+      document.getElementById('timerDisplay').innerText = `${h}:${m}:${s}`;
+    }
+
+    function updateTimerUI() {
+      const btn = document.getElementById('btnStartTimer');
+      const icon = document.getElementById('timerIcon');
+      const text = document.getElementById('timerBtnText');
+      const resetBtn = document.getElementById('btnResetTimer');
+
+      if (appState.timer.running) {
+        icon.className = "fa-solid fa-pause";
+        text.innerText = "Pausar";
+        resetBtn.classList.remove('hidden');
+      } else {
+        icon.className = "fa-solid fa-play";
+        text.innerText = appState.timer.accumulatedSeconds > 0 ? "Continuar" : "Iniciar";
+        if (appState.timer.accumulatedSeconds > 0) resetBtn.classList.remove('hidden');
+        else resetBtn.classList.add('hidden');
+      }
+    }
+
+    // --- ENVIOS DE RELATÓRIO ---
+    function getReportText() {
+      const selectedMonth = document.getElementById('filterMonth').value;
+      const filtered = appState.entries.filter(e => e.date.startsWith(selectedMonth));
+      
+      let totalMinutes = 0, pubs = 0, videos = 0, revisitas = 0;
+      filtered.forEach(e => {
+        totalMinutes += e.minutes;
+        pubs += e.pubs;
+        videos += e.videos;
+        revisitas += e.revisitas;
+      });
+
+      const hours = Math.floor(totalMinutes / 60);
+
+      return `📋 *Relatório de Serviço de Campo*\n` +
+             `👤 *Publicador:* ${appState.profile.name || 'Não informado'}\n` +
+             `📅 *Mês:* ${selectedMonth}\n\n` +
+             `⏱️ *Horas:* ${hours}\n` +
+             `📚 *Publicações:* ${pubs}\n` +
+             `🎥 *Vídeos:* ${videos}\n` +
+             `🔄 *Revisitas:* ${revisitas}`;
+    }
+
+    function sendWhatsAppReport() {
+      const text = encodeURIComponent(getReportText());
+      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+    }
+
+    function copyForHourglass() {
+      const text = getReportText();
+      navigator.clipboard.writeText(text).then(() => {
+        alert("Relatório copiado para a área de transferência!");
+      });
+    }
+
+    // --- CONFIGURAÇÕES E MODAL ---
+    function openConfigModal() {
+      document.getElementById('cfgName').value = appState.profile.name || '';
+      document.getElementById('cfgCongregation').value = appState.profile.congregation || '';
+      document.getElementById('cfgGoal').value = appState.profile.goal || '';
+      document.getElementById('configModal').classList.remove('hidden');
+    }
+
+    function closeConfigModal() {
+      document.getElementById('configModal').classList.add('hidden');
+    }
+
+    function saveConfig() {
+      appState.profile.name = document.getElementById('cfgName').value;
+      appState.profile.congregation = document.getElementById('cfgCongregation').value;
+      appState.profile.goal = parseInt(document.getElementById('cfgGoal').value) || 0;
+      
+      saveLocalStorage();
+      renderUI();
+      closeConfigModal();
+    }
+
+    // --- CAPACITOR NOTIFICAÇÕES LOCAIS ---
+    async function requestNotificationPermission() {
+      if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
+        // Nativo via Capacitor
+        const { LocalNotifications } = window.Capacitor.Plugins;
+        const perm = await LocalNotifications.requestPermissions();
+        if (perm.display === 'granted') {
+          await LocalNotifications.schedule({
+            notifications: [{
+              title: "Meu Campo",
+              body: "Não se esqueça de registrar seu tempo de campo hoje!",
+              id: 1,
+              schedule: { on: { hour: 8, minute: 0 } }
+            }]
+          });
+          alert("Lembrete nativo agendado para as 08:00!");
+        }
+      } else if ("Notification" in window) {
+        // Fallback Web API
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") {
+          alert("Notificações ativadas no navegador!");
+        }
+      } else {
+        alert("Notificações não são suportadas neste dispositivo.");
+      }
+    }
+
+    // --- EXPORTAR E IMPORTAR JSON ---
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `meu_campo_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importData(event) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (importedData.profile && importedData.entries) {
+            appState = importedData;
+            saveLocalStorage();
+            applyTheme(appState.profile.theme);
+            renderUI();
+            alert("Dados importados com sucesso!");
+            closeConfigModal();
+          } else {
+            alert("Arquivo JSON de backup inválido.");
+          }
+        } catch (err) {
+          alert("Erro ao ler o arquivo de backup.");
+        }
+      };
+      reader.readAsText(event.target.files[0]);
+    }
+  </script>
+</body>
+</html>
