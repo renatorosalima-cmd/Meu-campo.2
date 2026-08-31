@@ -1,590 +1,1174 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="light">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Meu Campo - Relatório de Serviço</title>
-  
-  <!-- Trava de Tema Claro Fixo -->
-  <style>
-    :root { color-scheme: light !important; }
-    html, body { background-color: #f8fafc !important; color: #0f172a !important; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Meta Tags estritas para travar o tema Light no navegador -->
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <meta name="theme-color" content="#ffffff">
+    
+    <title>Meu Campo - Testemunhas de Jeová</title>
+    
+    <!-- Core NATIVO do Capacitor -->
+    <script src="capacitor.js"></script>
 
-  <!-- Tailwind CSS v4 CDN -->
-  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-  
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Capacitor JS Bridge (Injetado automaticamente em ambiente nativo) -->
-  <script src="capacitor.js" onerror="console.log('Rodando em modo Web Browser')"></script>
+    <!-- Tailwind CSS e FontAwesome -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            color-scheme: light !important;
+        }
 
-  <style>
-    .dynamic-bg { background-color: var(--theme-primary, #0d9488); }
-    .dynamic-text { color: var(--theme-primary, #0d9488); }
-    .dynamic-border { border-color: var(--theme-primary, #0d9488); }
-    .dynamic-ring { --tw-ring-color: var(--theme-primary, #0d9488); }
-  </style>
+        html, body {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            html {
+                background-color: #ffffff !important;
+                color: #0f172a !important;
+            }
+        }
+
+        input, select {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+        }
+
+        .gradient-bar {
+            background: linear-gradient(to right, 
+                #ff0000 0%, #ff7f00 14%, #ffff00 28%, 
+                #00ff00 42%, #00ffff 57%, #0000ff 71%, 
+                #8b00ff 85%, #ff0000 100%);
+        }
+    </style> 
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans min-h-screen pb-20 selection:bg-teal-500 selection:text-white">
+<body class="bg-white text-slate-800 min-h-screen flex flex-col items-center justify-between p-4">
 
-  <!-- APP CONTAINER -->
-  <div id="app" class="max-w-md mx-auto bg-white min-h-screen shadow-lg flex flex-col relative">
-
-    <!-- CABEÇALHO -->
-    <header class="dynamic-bg text-white p-5 rounded-b-3xl shadow-md transition-colors duration-300">
-      <div class="flex justify-between items-center mb-3">
-        <div>
-          <h1 class="text-xl font-bold flex items-center gap-2">
-            <i class="fa-solid font-bold fa-book-open"></i> Meu Campo
-          </h1>
-          <p id="userGreeting" class="text-xs opacity-90 mt-0.5">Olá, Publicador</p>
-        </div>
-        <button onclick="openConfigModal()" class="p-2.5 bg-white/20 hover:bg-white/30 rounded-full transition-all text-sm backdrop-blur-sm" title="Configurações">
-          <i class="fa-solid fa-gear"></i>
-        </button>
-      </div>
-
-      <!-- Card Proporção / Meta -->
-      <div class="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/20 mt-2">
-        <div class="flex justify-between items-center text-xs font-medium mb-1.5">
-          <span>Progresso Mensal</span>
-          <span id="goalProgressText">0h / 0h</span>
-        </div>
-        <div class="w-full bg-black/20 rounded-full h-2.5 overflow-hidden">
-          <div id="goalProgressBar" class="bg-white h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-      </div>
-    </header>
-
-    <!-- CRONÔMETRO FLUTUANTE / FIXO -->
-    <section class="px-5 -mt-4 mb-4 z-10">
-      <div class="bg-white rounded-2xl p-4 shadow-md border border-slate-100 flex items-center justify-between">
-        <div>
-          <span class="text-xs text-slate-500 font-medium block">Cronômetro de Campo</span>
-          <span id="timerDisplay" class="text-2xl font-black font-mono tracking-wider text-slate-800">00:00:00</span>
-        </div>
-        <div class="flex gap-2">
-          <button id="btnStartTimer" onclick="toggleTimer()" class="dynamic-bg text-white px-4 py-2.5 rounded-xl font-semibold shadow-sm text-sm active:scale-95 transition-all flex items-center gap-2">
-            <i class="fa-solid fa-play" id="timerIcon"></i> <span id="timerBtnText">Iniciar</span>
-          </button>
-          <button id="btnResetTimer" onclick="resetTimer()" class="bg-slate-100 text-slate-600 px-3 py-2.5 rounded-xl font-semibold text-sm hover:bg-slate-200 active:scale-95 transition-all hidden">
-            <i class="fa-solid fa-rotate-left"></i>
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- REGISTRO DIÁRIO -->
-    <main class="flex-1 px-5 space-y-5">
-      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-4">
-        <div class="flex justify-between items-center border-b border-slate-200 pb-3">
-          <h2 class="font-bold text-slate-700 text-sm flex items-center gap-2">
-            <i class="fa-regular fa-calendar-plus dynamic-text"></i> Registrar Atividade
-          </h2>
-          <input type="date" id="entryDate" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 dynamic-ring">
-        </div>
-
-        <!-- Modalidades (Horas/Minutos) -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-500 mb-1.5">Modalidade de Pregação</label>
-          <div class="grid grid-cols-2 gap-2">
-            <select id="entryCategory" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 dynamic-ring">
-              <option value="casaEmCasa">Casa em Casa</option>
-              <option value="carrinho">Carrinho / Display</option>
-              <option value="cartas">Testemunho por Cartas</option>
-              <option value="estudo">Estudo Bíblico</option>
-              <option value="outros">Outros</option>
-            </select>
-            <div class="flex items-center bg-white border border-slate-300 rounded-xl px-3 py-1">
-              <input type="number" id="entryMinutes" min="1" placeholder="Minutos" class="w-full text-xs font-semibold focus:outline-none bg-transparent">
-              <span class="text-xs text-slate-400 font-medium">min</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Outras Métricas -->
-        <div class="grid grid-cols-3 gap-2 pt-1">
-          <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
-            <span class="block text-[10px] font-semibold text-slate-400 uppercase">Publ.</span>
-            <input type="number" id="entryPubs" value="0" min="0" class="w-full text-center font-bold text-slate-700 text-sm focus:outline-none bg-transparent">
-          </div>
-          <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
-            <span class="block text-[10px] font-semibold text-slate-400 uppercase">Vídeos</span>
-            <input type="number" id="entryVideos" value="0" min="0" class="w-full text-center font-bold text-slate-700 text-sm focus:outline-none bg-transparent">
-          </div>
-          <div class="bg-white p-2.5 rounded-xl border border-slate-200 text-center">
-            <span class="block text-[10px] font-semibold text-slate-400 uppercase">Revisitas</span>
-            <input type="number" id="entryRevisitas" value="0" min="0" class="w-full text-center font-bold text-slate-700 text-sm focus:outline-none bg-transparent">
-          </div>
-        </div>
-
-        <button onclick="saveDailyEntry()" class="w-full dynamic-bg text-white py-2.5 rounded-xl font-semibold text-sm shadow-sm active:scale-98 transition-all flex justify-center items-center gap-2">
-          <i class="fa-solid fa-plus text-xs"></i> Adicionar ao Relatório
-        </button>
-      </div>
-
-      <!-- RESUMO MENSAL E ENVIOS -->
-      <div class="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm space-y-3">
-        <div class="flex justify-between items-center">
-          <h2 class="font-bold text-slate-800 text-sm">Resumo de <span id="currentMonthName" class="dynamic-text">Este Mês</span></h2>
-          <input type="month" id="filterMonth" onchange="renderMonthlySummary()" class="text-xs bg-slate-100 border-none rounded-lg px-2 py-1 font-semibold text-slate-600">
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 text-slate-700 text-xs font-medium">
-          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Total Horas:</span> <strong id="sumHours" class="text-slate-900">0h 0m</strong></div>
-          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Publicações:</span> <strong id="sumPubs" class="text-slate-900">0</strong></div>
-          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Vídeos:</span> <strong id="sumVideos" class="text-slate-900">0</strong></div>
-          <div class="bg-slate-50 p-2.5 rounded-xl flex justify-between"><span>Revisitas:</span> <strong id="sumRevisitas" class="text-slate-900">0</strong></div>
-        </div>
-
-        <!-- Botões de Envio de Relatório -->
-        <div class="grid grid-cols-2 gap-2 pt-2">
-          <button onclick="sendWhatsAppReport()" class="bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-3 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
-            <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
-          </button>
-          <button onclick="copyForHourglass()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 px-3 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
-            <i class="fa-solid fa-copy text-sm"></i> Hourglass
-          </button>
-        </div>
-      </div>
-
-      <!-- HISTÓRICO DE REGISTROS DO MÊS -->
-      <div class="space-y-2">
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider px-1">Histórico do Mês</h3>
-        <div id="entriesList" class="space-y-2 pb-6">
-          <!-- Injetado dinamicamente via JS -->
-        </div>
-      </div>
-    </main>
-  </div>
-
-  <!-- MODAL DE CONFIGURAÇÕES -->
-  <div id="configModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-        <h3 class="font-bold text-slate-800 text-base">Configurações</h3>
-        <button onclick="closeConfigModal()" class="text-slate-400 hover:text-slate-600 p-1"><i class="fa-solid fa-xmark text-lg"></i></button>
-      </div>
-
-      <!-- Perfil -->
-      <div class="space-y-3">
-        <h4 class="text-xs font-bold text-slate-400 uppercase">Dados do Publicador</h4>
-        <div>
-          <label class="block text-xs text-slate-600 font-medium mb-1">Nome Completo</label>
-          <input type="text" id="cfgName" placeholder="Seu nome" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 dynamic-ring">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-xs text-slate-600 font-medium mb-1">Congregação</label>
-            <input type="text" id="cfgCongregation" placeholder="Nome" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 dynamic-ring">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-600 font-medium mb-1">Meta (Horas)</label>
-            <input type="number" id="cfgGoal" placeholder="Ex: 50" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 dynamic-ring">
-          </div>
-        </div>
-      </div>
-
-      <!-- Personalização de Cores -->
-      <div class="space-y-2 border-t border-slate-100 pt-3">
-        <h4 class="text-xs font-bold text-slate-400 uppercase">Tema do Aplicativo</h4>
-        <div class="flex gap-3 justify-between items-center bg-slate-50 p-2.5 rounded-xl">
-          <button onclick="setTheme('#0d9488')" class="w-7 h-7 rounded-full bg-teal-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
-          <button onclick="setTheme('#2563eb')" class="w-7 h-7 rounded-full bg-blue-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
-          <button onclick="setTheme('#7c3aed')" class="w-7 h-7 rounded-full bg-purple-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
-          <button onclick="setTheme('#e11d48')" class="w-7 h-7 rounded-full bg-rose-600 ring-2 ring-offset-1 ring-transparent focus:ring-slate-400"></button>
-          <input type="color" id="customColorPicker" onchange="setTheme(this.value)" class="w-7 h-7 rounded-full cursor-pointer border-0 bg-transparent">
-        </div>
-      </div>
-
-      <!-- Lembrete Diário -->
-      <div class="space-y-2 border-t border-slate-100 pt-3">
-        <h4 class="text-xs font-bold text-slate-400 uppercase">Lembrete Diário</h4>
-        <button onclick="requestNotificationPermission()" class="w-full bg-slate-100 text-slate-700 py-2 rounded-xl font-semibold text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-          <i class="fa-regular fa-bell"></i> Ativar Lembrete (08:00)
-        </button>
-      </div>
-
-      <!-- Backup de Dados -->
-      <div class="space-y-2 border-t border-slate-100 pt-3">
-        <h4 class="text-xs font-bold text-slate-400 uppercase">Backup de Dados</h4>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="exportData()" class="bg-slate-800 text-white py-2 rounded-xl font-semibold text-xs hover:bg-slate-900 transition-all flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-download"></i> Exportar
-          </button>
-          <label class="bg-slate-100 text-slate-700 py-2 rounded-xl font-semibold text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-center">
-            <i class="fa-solid fa-upload"></i> Importar
-            <input type="file" id="importFileInput" onchange="importData(event)" accept=".json" class="hidden">
-          </label>
-        </div>
-      </div>
-
-      <button onclick="saveConfig()" class="w-full dynamic-bg text-white py-3 rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all mt-2">
-        Salvar Alterações
-      </button>
-    </div>
-  </div>
-
-  <!-- SCRIPT PRINCIPAL E LÓGICA LOGISTICA -->
-  <script>
-    // --- ESTADO DA APLICAÇÃO ---
-    let appState = {
-      profile: { name: '', congregation: '', goal: 0, theme: '#0d9488' },
-      entries: [],
-      timer: { running: false, startTime: 0, accumulatedSeconds: 0 }
-    };
-
-    let timerInterval = null;
-
-    // --- INICIALIZAÇÃO ---
-    document.addEventListener('DOMContentLoaded', () => {
-      loadLocalStorage();
-      initDates();
-      applyTheme(appState.profile.theme);
-      renderUI();
-      restoreTimerState();
-    });
-
-    function initDates() {
-      const today = new Date().toISOString().split('T')[0];
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      document.getElementById('entryDate').value = today;
-      document.getElementById('filterMonth').value = currentMonth;
-    }
-
-    // --- CARREGAR / SALVAR LOCALSTORAGE ---
-    function loadLocalStorage() {
-      const savedProfile = localStorage.getItem('mc_profile');
-      if (savedProfile) appState.profile = JSON.parse(savedProfile);
-      
-      const savedEntries = localStorage.getItem('mc_entries');
-      if (savedEntries) appState.entries = JSON.parse(savedEntries);
-
-      const savedTimer = localStorage.getItem('mc_timer');
-      if (savedTimer) appState.timer = JSON.parse(savedTimer);
-    }
-
-    function saveLocalStorage() {
-      localStorage.setItem('mc_profile', JSON.stringify(appState.profile));
-      localStorage.setItem('mc_entries', JSON.stringify(appState.entries));
-      localStorage.setItem('mc_timer', JSON.stringify(appState.timer));
-    }
-
-    // --- SISTEMA DE TEMAS ---
-    function setTheme(hexColor) {
-      appState.profile.theme = hexColor;
-      applyTheme(hexColor);
-      saveLocalStorage();
-    }
-
-    function applyTheme(hexColor) {
-      document.documentElement.style.setProperty('--theme-primary', hexColor || '#0d9488');
-    }
-
-    // --- RENDERIZAÇÃO DE INTERFACE ---
-    function renderUI() {
-      document.getElementById('userGreeting').innerText = appState.profile.name 
-        ? `Olá, ${appState.profile.name}` 
-        : 'Olá, Publicador';
-      
-      renderMonthlySummary();
-    }
-
-    function renderMonthlySummary() {
-      const selectedMonth = document.getElementById('filterMonth').value;
-      const filteredEntries = appState.entries.filter(e => e.date.startsWith(selectedMonth));
-      
-      let totalMinutes = 0, pubs = 0, videos = 0, revisitas = 0;
-
-      filteredEntries.forEach(e => {
-        totalMinutes += (parseInt(e.minutes) || 0);
-        pubs += (parseInt(e.pubs) || 0);
-        videos += (parseInt(e.videos) || 0);
-        revisitas += (parseInt(e.revisitas) || 0);
-      });
-
-      const hours = Math.floor(totalMinutes / 60);
-      const mins = totalMinutes % 60;
-
-      document.getElementById('sumHours').innerText = `${hours}h ${mins}m`;
-      document.getElementById('sumPubs').innerText = pubs;
-      document.getElementById('sumVideos').innerText = videos;
-      document.getElementById('sumRevisitas').innerText = revisitas;
-
-      // Progresso da Meta
-      const goal = appState.profile.goal || 0;
-      document.getElementById('goalProgressText').innerText = `${hours}h / ${goal}h`;
-      const percent = goal > 0 ? Math.min(100, Math.round((hours / goal) * 100)) : 0;
-      document.getElementById('goalProgressBar').style.width = `${percent}%`;
-
-      // RenderLista
-      const listContainer = document.getElementById('entriesList');
-      listContainer.innerHTML = '';
-
-      if (filteredEntries.length === 0) {
-        listContainer.innerHTML = `<p class="text-xs text-center text-slate-400 py-4">Nenhum registro para este mês.</p>`;
-        return;
-      }
-
-      filteredEntries.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(entry => {
-        const entryHours = Math.floor(entry.minutes / 60);
-        const entryMins = entry.minutes % 60;
-        const formattedTime = entryHours > 0 ? `${entryHours}h ${entryMins}m` : `${entryMins}m`;
-
-        const div = document.createElement('div');
-        div.className = "bg-white p-3 rounded-xl border border-slate-100 shadow-2xs flex justify-between items-center text-xs";
-        div.innerHTML = `
-          <div>
-            <span class="font-bold text-slate-700">${formatDateBR(entry.date)}</span>
-            <span class="text-slate-400 block text-[10px] capitalize">${entry.category}</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <span class="font-bold dynamic-text">${formattedTime}</span>
-            <button onclick="deleteEntry('${entry.id}')" class="text-slate-300 hover:text-rose-500 p-1"><i class="fa-solid fa-trash-can"></i></button>
-          </div>
-        `;
-        listContainer.appendChild(div);
-      });
-    }
-
-    function formatDateBR(dateStr) {
-      const parts = dateStr.split('-');
-      return `${parts[2]}/${parts[1]}`;
-    }
-
-    // --- REGISTRO DE DADOS ---
-    function saveDailyEntry() {
-      const date = document.getElementById('entryDate').value;
-      const category = document.getElementById('entryCategory').value;
-      const minutes = parseInt(document.getElementById('entryMinutes').value) || 0;
-      const pubs = parseInt(document.getElementById('entryPubs').value) || 0;
-      const videos = parseInt(document.getElementById('entryVideos').value) || 0;
-      const revisitas = parseInt(document.getElementById('entryRevisitas').value) || 0;
-
-      if (!date || minutes <= 0) {
-        alert("Por favor, informe a data e a quantidade de minutos praticados.");
-        return;
-      }
-
-      const newEntry = {
-        id: Date.now().toString(),
-        date,
-        category,
-        minutes,
-        pubs,
-        videos,
-        revisitas
-      };
-
-      appState.entries.push(newEntry);
-      saveLocalStorage();
-      renderMonthlySummary();
-
-      // Reset inputs
-      document.getElementById('entryMinutes').value = '';
-      document.getElementById('entryPubs').value = '0';
-      document.getElementById('entryVideos').value = '0';
-      document.getElementById('entryRevisitas').value = '0';
-    }
-
-    function deleteEntry(id) {
-      if (confirm("Deseja remover este registro?")) {
-        appState.entries = appState.entries.filter(e => e.id !== id);
-        saveLocalStorage();
-        renderMonthlySummary();
-      }
-    }
-
-    // --- CRONÔMETRO PERSISTENTE ---
-    function toggleTimer() {
-      if (appState.timer.running) {
-        // Pausar
-        appState.timer.accumulatedSeconds += Math.floor((Date.now() - appState.timer.startTime) / 1000);
-        appState.timer.running = false;
-        clearInterval(timerInterval);
+    <!-- Container Principal do App -->
+    <div id="paginaInicial" class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col mb-4 border border-slate-200">
         
-        // Auto-preencher minutos
-        const mins = Math.floor(appState.timer.accumulatedSeconds / 60);
-        if (mins > 0) {
-          document.getElementById('entryMinutes').value = mins;
+        <!-- Cabeçalho -->
+        <header id="appHeader" class="bg-teal-700 text-white p-5 text-center transition-colors">
+            <h1 class="text-xl font-bold"><i class="fa-solid fa-clock mr-2"></i> Serviço de Campo</h1>
+            <p id="mesAtualText" class="text-xs text-teal-200 mt-1 uppercase tracking-wider font-semibold"></p>
+        </header>
+
+        <!-- Banner Salmo 110:3 -->
+        <div id="bannerFrase" class="bg-teal-50 border-b border-teal-100 p-3 text-center px-6 transition-colors">
+            <p id="textoFrase" class="text-xs italic text-teal-900 leading-relaxed font-serif">
+                “Seu povo se apresentará voluntariamente no dia da sua força militar. Em esplêndida santidade, vindos do amanhecer...”
+            </p>
+            <span id="autorFrase" class="text-[10px] font-semibold text-teal-700 block mt-1 uppercase tracking-wider">— Salmo 110:3 (TNM)</span>
+        </div>
+
+        <!-- Corpo do App -->
+        <main class="p-5 flex flex-col gap-5 bg-white">
+
+            <!-- Perfil e Seleção de Data -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase">Nome do Publicador</label>
+                    <input type="text" id="inputNome" placeholder="Seu nome" oninput="salvarDadosPerfil()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase">Congregação</label>
+                        <input type="text" id="inputCongregacao" placeholder="Nome da congregação" oninput="salvarDadosPerfil()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase">Circuito</label>
+                        <input type="text" id="inputCircuito" placeholder="Ex: SP-12" oninput="salvarDadosPerfil()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase">Meta de Serviço</label>
+                        <select id="selectMeta" onchange="alterarMeta()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <option value="0">Publicador</option>
+                            <option value="15">Auxiliar (15h)</option>
+                            <option value="30">Auxiliar (30h)</option>
+                            <option value="50">Regular (50h)</option>
+                            <option value="100">Especial (100h)</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase">Mês</label>
+                            <select id="selectMes" onchange="mudarDataSelecionada()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-teal-800">
+                                <option value="01">Janeiro</option>
+                                <option value="02">Fevereiro</option>
+                                <option value="03">Março</option>
+                                <option value="04">Abril</option>
+                                <option value="05">Maio</option>
+                                <option value="06">Junho</option>
+                                <option value="07">Julho</option>
+                                <option value="08">Agosto</option>
+                                <option value="09">Setembro</option>
+                                <option value="10">Outubro</option>
+                                <option value="11">Novembro</option>
+                                <option value="12">Dezembro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase">Ano</label>
+                            <select id="selectAno" onchange="mudarDataSelecionada()" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium text-teal-800">
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cronômetro -->
+            <div id="cardCronometro" class="bg-teal-50 border border-teal-100 rounded-xl p-4 text-center shadow-inner transition-colors">
+                <div class="flex flex-col items-center gap-0.5">
+                    <span id="subtituloCronometro" class="text-xs text-teal-600 font-semibold uppercase tracking-wide">Cronômetro Geral</span>
+                    <span id="tagCronometro" class="text-[10px] text-teal-700 bg-teal-100/80 px-2 py-0.5 rounded-full font-medium">(Uso do cronômetro opcional)</span>
+                </div>
+                <div id="cronometroDisplay" class="text-4xl font-mono font-bold text-teal-900 my-2">00:00:00</div>
+                <button id="btnCronometro" onclick="alternarCronometro()" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-5 py-2 rounded-full shadow transition flex items-center justify-center gap-2 mx-auto cursor-pointer text-sm">
+                    <i id="iconePlayPause" class="fa-solid fa-play"></i> <span id="textoBotaoCronometro">Iniciar Campo Agora</span>
+                </button>
+            </div>
+
+            <!-- Resumo de Horas -->
+            <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-3 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div id="iconeHorasBg" class="bg-teal-100 text-teal-700 w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500 font-medium">Total de Horas no Mês</p>
+                            <h2 class="text-lg font-bold text-slate-800">
+                                <span id="totalHorasDisplay">0h 0min</span>
+                                <span id="porcentagemMeta" class="text-xs font-semibold ml-1 text-teal-600"></span>
+                            </h2>
+                        </div>
+                    </div>
+                </div>
+                <div id="containerBarraMeta" class="hidden w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                    <div id="barraProgresso" class="bg-teal-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <div id="mensagemMetaConcluida" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-800 p-2.5 rounded-lg text-center animate-bounce mt-1">
+                    <p class="text-xs font-bold flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        <span>Parabéns, meta concluída!</span>
+                    </p>
+                    <span class="text-[10px] font-medium text-emerald-600 block mt-0.5">Mateus 24:14 (TNM)</span>
+                </div>
+            </div>
+
+            <!-- Calendário -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <div class="flex items-center gap-1.5">
+                        <i id="iconeCalendario" class="fa-solid fa-calendar-days text-teal-600 text-sm"></i>
+                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">Calendário:</h3>
+                        <span id="nomeMesCalendario" class="text-xs font-extrabold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-md uppercase tracking-wide"></span>
+                    </div>
+                    <span class="text-[10px] text-slate-400">Clique para editar</span>
+                </div>
+                <div id="gridCalendarioDias" class="grid grid-cols-7 gap-1.5 max-h-56 overflow-y-auto pr-1 pt-1"></div>
+            </div>
+
+            <!-- Totais do Mês -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2">
+                <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-1"><i id="iconeGrafico" class="fa-solid fa-chart-pie text-teal-600 mr-1"></i> Totais do Mês</h3>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center">
+                        <span class="text-slate-700 text-xs font-medium"><i id="iconePub" class="fa-solid fa-book-open text-teal-600 mr-1"></i> Publicações</span>
+                        <span id="totalPub" class="font-bold text-slate-900">0</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center">
+                        <span class="text-slate-700 text-xs font-medium"><i id="iconeVid" class="fa-solid fa-video text-teal-600 mr-1"></i> Vídeos</span>
+                        <span id="totalVid" class="font-bold text-slate-900">0</span>
+                    </div>
+                    <div class="bg-white p-2.5 rounded-lg border border-slate-200 flex justify-between items-center">
+                        <span class="text-slate-700 text-xs font-medium"><i id="iconeRev" class="fa-solid fa-rotate-right text-teal-600 mr-1"></i> Revisitas</span>
+                        <span id="totalRev" class="font-bold text-slate-900">0</span>
+                    </div>
+                    <div id="boxEstudos" class="bg-white p-2 rounded-lg border border-teal-200 flex justify-between items-center bg-teal-50/50">
+                        <span class="text-slate-700 text-xs font-semibold"><i id="iconeEstudos" class="fa-solid fa-users text-teal-600 mr-1"></i> Estudos Ativos</span>
+                        <input type="number" id="inputEstudosAtivos" min="0" oninput="salvarEstudosAtivos()" class="w-12 bg-white border border-teal-300 rounded px-1.5 py-0.5 text-center text-xs font-bold text-teal-800 focus:outline-none focus:ring-1 focus:ring-teal-500" value="0">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card de Lembretes Nativos (Limpo e Direto) -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i id="iconeNotificacao" class="fa-solid fa-bell text-teal-600"></i>
+                        <h3 class="text-xs font-bold text-slate-600 uppercase tracking-wider">Lembrete de Campo (08:00)</h3>
+                    </div>
+                    <span id="statusNotificacao" class="text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">Desativado</span>
+                </div>
+                <button id="btnAtivarLembrete" onclick="toggleLembreteDiario()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 rounded-xl text-xs shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-bell-ring"></i> <span id="textoBtnLembrete">Ativar Lembrete Diário</span>
+                </button>
+            </div>
+
+            <!-- Botões Inferiores -->
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                <button onclick="abrirTelaPersonalizacao()" class="text-center text-xs text-slate-600 hover:text-slate-800 py-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition font-medium">
+                    <i class="fa-solid fa-palette text-slate-400"></i> Personalização
+                </button>
+                <button onclick="abrirTelaSobre()" class="text-center text-xs text-slate-600 hover:text-slate-800 py-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer transition font-medium">
+                    <i class="fa-solid fa-circle-info text-teal-600"></i> Sobre e Apoiar
+                </button>
+            </div>
+
+            <!-- Botões de Envio de Relatório -->
+            <div class="flex flex-col gap-2 mt-1">
+                <button onclick="enviarWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold p-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-brands fa-whatsapp text-xl"></i> Enviar Relatório no WhatsApp
+                </button>
+                
+                <button id="btnCopiarHourglass" onclick="copiarParaHourglass()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold p-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-copy text-lg"></i> Copiar Dados para o Hourglass
+                </button>
+            </div>
+
+        </main>
+
+        <footer class="bg-slate-50 p-3 text-center text-xs text-slate-400 border-t border-slate-100">
+            Dados salvos localmente no seu dispositivo 📱
+        </footer>
+    </div>
+
+    <!-- TELA DE PERSONALIZAÇÃO -->
+    <div id="telaPersonalizacao" class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden hidden flex-col mb-4 border border-slate-200">
+        <header id="headerPersonalizacao" class="bg-teal-700 text-white p-4 flex items-center justify-between transition-colors">
+            <button onclick="fecharTelaPersonalizacao()" class="text-white hover:text-slate-200 text-sm flex items-center gap-1 cursor-pointer font-medium">
+                <i class="fa-solid fa-arrow-left"></i> Voltar
+            </button>
+            <h2 class="font-bold text-base">Personalização do Aplicativo</h2>
+            <div class="w-12"></div>
+        </header>
+
+        <main class="p-5 flex flex-col gap-5 bg-white">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-4">
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Escolha as cores de preferência para personalizar os botões, títulos e fundos do aplicativo:
+                </p>
+
+                <div class="flex bg-slate-200 p-1 rounded-lg text-xs font-semibold">
+                    <button id="btnModoPadrao" onclick="alternarModoCor('padrao')" class="w-1/2 py-1.5 rounded-md transition text-slate-700 bg-white shadow-xs">Padrão</button>
+                    <button id="btnModoCustom" onclick="alternarModoCor('custom')" class="w-1/2 py-1.5 rounded-md transition text-slate-600 hover:text-slate-800">Personalizado (Gradiente)</button>
+                </div>
+
+                <div id="painelModoPadrao" class="flex flex-col gap-3 bg-white p-3 rounded-lg border border-slate-300">
+                    <span class="text-xs text-slate-500 font-medium">Selecione um Tema:</span>
+                    <div class="flex items-center justify-around py-2">
+                        <button onclick="selecionarTemaPadrao('teal')" title="Verde Teal" class="w-9 h-9 rounded-full bg-teal-700 hover:scale-110 transition border-2 border-white shadow-md cursor-pointer"></button>
+                        <button onclick="selecionarTemaPadrao('blue')" title="Azul" class="w-9 h-9 rounded-full bg-blue-700 hover:scale-110 transition border-2 border-white shadow-md cursor-pointer"></button>
+                        <button onclick="selecionarTemaPadrao('purple')" title="Roxo" class="w-9 h-9 rounded-full bg-purple-700 hover:scale-110 transition border-2 border-white shadow-md cursor-pointer"></button>
+                        <button onclick="selecionarTemaPadrao('slate')" title="Grafite" class="w-9 h-9 rounded-full bg-slate-800 hover:scale-110 transition border-2 border-white shadow-md cursor-pointer"></button>
+                        <button onclick="selecionarTemaPadrao('rose')" title="Vinho" class="w-9 h-9 rounded-full bg-rose-800 hover:scale-110 transition border-2 border-white shadow-md cursor-pointer"></button>
+                    </div>
+                </div>
+
+                <div id="painelModoCustom" class="hidden flex-col gap-3 bg-white p-3 rounded-lg border border-slate-300">
+                    <div>
+                        <span class="text-xs text-slate-600 font-semibold block mb-1">Arraste/clique na barra para escolher qualquer cor:</span>
+                        <div id="barraGradiente" onclick="selecionarCorDoGradiente(event)" class="gradient-bar h-10 rounded-lg cursor-pointer shadow-inner relative border border-slate-300 flex items-center justify-center">
+                            <span class="text-[10px] text-white font-bold drop-shadow-md pointer-events-none uppercase tracking-wider"><i class="fa-solid fa-hand-pointer mr-1"></i> Clique para escolher a cor</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase">Principal</span>
+                            <input type="color" id="pickerCorPrincipal" value="#0f766e" onchange="atualizarCorCustomizada()" class="w-8 h-8 rounded border-none cursor-pointer">
+                        </div>
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase">Texto Destaque</span>
+                            <input type="color" id="pickerCorTexto" value="#115e59" onchange="atualizarCorCustomizada()" class="w-8 h-8 rounded border-none cursor-pointer">
+                        </div>
+                        <div class="flex flex-col items-center gap-1">
+                            <span class="text-[10px] text-slate-500 font-bold uppercase">Fundo Leve</span>
+                            <input type="color" id="pickerCorFundo" value="#f0fdf4" onchange="atualizarCorCustomizada()" class="w-8 h-8 rounded border-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="fecharTelaPersonalizacao()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold p-3.5 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                Concluir e Salvar
+            </button>
+        </main>
+    </div>
+
+    <!-- TELA SOBRE E APOIAR -->
+    <div id="telaSobre" class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden hidden flex-col mb-4 border border-slate-200">
+        <header id="headerSobre" class="bg-teal-700 text-white p-4 flex items-center justify-between transition-colors">
+            <button onclick="fecharTelaSobre()" class="text-white hover:text-slate-200 text-sm flex items-center gap-1 cursor-pointer font-medium">
+                <i class="fa-solid fa-arrow-left"></i> Voltar
+            </button>
+            <h2 class="font-bold text-base">Sobre e Apoiar</h2>
+            <div class="w-12"></div>
+        </header>
+
+        <main class="p-5 flex flex-col gap-4 bg-white">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 text-center flex flex-col gap-2">
+                <div class="w-12 h-12 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xl mx-auto mb-1">
+                    <i class="fa-solid fa-heart"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 text-sm">Feito para os Publicadores</h3>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Este aplicativo foi desenvolvido com o objetivo de facilitar as marcações e a organização do serviço de campo dos publicadores, de forma <strong>100% gratuita</strong> e sem anúncios.
+                </p>
+            </div>
+
+            <!-- Pix -->
+            <div class="bg-teal-50/70 border border-teal-200 rounded-xl p-4 flex flex-col gap-3 text-center">
+                <h4 class="text-xs font-bold text-teal-900 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-hand-holding-dollar text-teal-600"></i> Apoie este Projeto
+                </h4>
+                <p class="text-xs text-teal-800 leading-relaxed">
+                    Se este aplicativo tem ajudado no seu dia a dia e você deseja contribuir voluntariamente para a manutenção e novos recursos, fique à vontade para enviar qualquer valor via Pix:
+                </p>
+
+                <div class="bg-white border border-teal-300 rounded-lg p-3 flex flex-col items-center gap-2 shadow-xs">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Chave Pix (Aleatória)</span>
+                    <span id="chavePixTexto" class="font-mono text-xs font-bold text-slate-700 break-all select-all bg-slate-100 px-2 py-1 rounded w-full">
+                        a9dfbdf1-a844-45ca-b17c-161a073e8335
+                    </span>
+                    <button onclick="copiarChavePix()" id="btnCopiarPix" class="w-full bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-copy"></i> Copiar Chave Pix
+                    </button>
+                </div>
+            </div>
+
+            <!-- E-mail -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 text-center">
+                <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-envelope text-teal-600"></i> Dúvidas ou Sugestões?
+                </h4>
+                <p class="text-xs text-slate-600 leading-relaxed">
+                    Entre em contato com o desenvolvedor através do e-mail abaixo:
+                </p>
+                <div class="bg-white border border-slate-300 rounded-lg p-3 flex flex-col items-center gap-2 shadow-xs">
+                    <span id="emailContatoTexto" class="font-mono text-xs font-bold text-slate-700 select-all bg-slate-100 px-2 py-1 rounded w-full">
+                        Renatorosalima@outlook.com
+                    </span>
+                    <button onclick="copiarEmailContato()" id="btnCopiarEmail" class="w-full bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold py-2 rounded-lg transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-copy"></i> Copiar E-mail
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="fecharTelaSobre()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold p-3 rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer text-sm">
+                Voltar ao Início
+            </button>
+        </main>
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DO DIA -->
+    <div id="modalDia" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]">
+            <div id="modalHeader" class="bg-teal-700 text-white p-4 flex justify-between items-center transition-colors">
+                <h3 id="modalTituloData" class="font-bold text-base">Editar Dia</h3>
+                <button onclick="fecharModalDia()" class="text-white/80 hover:text-white cursor-pointer text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="p-5 flex flex-col gap-4 overflow-y-auto bg-white">
+                <div class="grid grid-cols-2 gap-3 bg-slate-100 p-3 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Horas Totais (Auto)</label>
+                        <input type="number" id="modalHoras" readonly class="w-full bg-slate-200 border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-center text-slate-600 cursor-not-allowed select-none focus:outline-none" value="0">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 uppercase mb-1">Minutos Totais (Auto)</label>
+                        <input type="number" id="modalMinutos" readonly class="w-full bg-slate-200 border border-slate-300 rounded-lg px-3 py-1.5 text-sm font-bold text-center text-slate-600 cursor-not-allowed select-none focus:outline-none" value="0">
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-slate-600 uppercase">Modalidades (Informe os Minutos)</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        
+                        <!-- Modalidade Casa em Casa -->
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-1.5">
+                            <span class="font-medium text-slate-600">De casa em casa</span>
+                            <input type="number" id="modCasa" min="0" placeholder="Minutos" oninput="recalcularTempoModalidades()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="adicionarMinutos('modCasa', 15)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+15m</button>
+                                <button type="button" onclick="adicionarMinutos('modCasa', 30)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+30m</button>
+                                <button type="button" onclick="adicionarMinutos('modCasa', 60)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+1h</button>
+                            </div>
+                        </div>
+
+                        <!-- Modalidade Carrinho -->
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-1.5">
+                            <span class="font-medium text-slate-600">Carrinho</span>
+                            <input type="number" id="modCarrinho" min="0" placeholder="Minutos" oninput="recalcularTempoModalidades()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="adicionarMinutos('modCarrinho', 15)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+15m</button>
+                                <button type="button" onclick="adicionarMinutos('modCarrinho', 30)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+30m</button>
+                                <button type="button" onclick="adicionarMinutos('modCarrinho', 60)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+1h</button>
+                            </div>
+                        </div>
+
+                        <!-- Modalidade Display -->
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-1.5">
+                            <span class="font-medium text-slate-600">Display</span>
+                            <input type="number" id="modDisplay" min="0" placeholder="Minutos" oninput="recalcularTempoModalidades()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="adicionarMinutos('modDisplay', 15)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+15m</button>
+                                <button type="button" onclick="adicionarMinutos('modDisplay', 30)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+30m</button>
+                                <button type="button" onclick="adicionarMinutos('modDisplay', 60)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+1h</button>
+                            </div>
+                        </div>
+
+                        <!-- Modalidade Cartas -->
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-1.5">
+                            <span class="font-medium text-slate-600">Cartas</span>
+                            <input type="number" id="modCartas" min="0" placeholder="Minutos" oninput="recalcularTempoModalidades()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="adicionarMinutos('modCartas', 15)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+15m</button>
+                                <button type="button" onclick="adicionarMinutos('modCartas', 30)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+30m</button>
+                                <button type="button" onclick="adicionarMinutos('modCartas', 60)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+1h</button>
+                            </div>
+                        </div>
+
+                        <!-- Modalidade Estudo -->
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-1.5">
+                            <span class="font-medium text-slate-600">Estudo</span>
+                            <input type="number" id="modEstudo" min="0" placeholder="Minutos" oninput="recalcularTempoModalidades()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="adicionarMinutos('modEstudo', 15)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+15m</button>
+                                <button type="button" onclick="adicionarMinutos('modEstudo', 30)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+30m</button>
+                                <button type="button" onclick="adicionarMinutos('modEstudo', 60)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+1h</button>
+                            </div>
+                        </div>
+
+                        <!-- Modalidade Outros -->
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex flex-col gap-1.5">
+                            <span class="font-medium text-slate-600">Outros</span>
+                            <input type="number" id="modOutros" min="0" placeholder="Minutos" oninput="recalcularTempoModalidades()" class="w-full bg-white border border-slate-300 rounded px-2 py-1 text-xs focus:ring-1 focus:ring-teal-500">
+                            <div class="flex gap-1">
+                                <button type="button" onclick="adicionarMinutos('modOutros', 15)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+15m</button>
+                                <button type="button" onclick="adicionarMinutos('modOutros', 30)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+30m</button>
+                                <button type="button" onclick="adicionarMinutos('modOutros', 60)" class="bg-slate-200 hover:bg-slate-300 text-[10px] font-semibold px-1.5 py-0.5 rounded text-slate-700 flex-1">+1h</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-bold text-slate-600 uppercase">Atividades Realizadas</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 flex flex-col items-center gap-1">
+                            <span class="text-[11px] text-slate-600 font-medium">Publicações</span>
+                            <input type="number" id="modalPub" min="0" class="w-full bg-white border border-slate-300 rounded px-1 py-1 text-center text-xs font-bold" value="0">
+                        </div>
+                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 flex flex-col items-center gap-1">
+                            <span class="text-[11px] text-slate-600 font-medium">Vídeos</span>
+                            <input type="number" id="modalVid" min="0" class="w-full bg-white border border-slate-300 rounded px-1 py-1 text-center text-xs font-bold" value="0">
+                        </div>
+                        <div class="bg-slate-50 p-2 rounded-lg border border-slate-200 flex flex-col items-center gap-1">
+                            <span class="text-[11px] text-slate-600 font-medium">Revisitas</span>
+                            <input type="number" id="modalRev" min="0" class="w-full bg-white border border-slate-300 rounded px-1 py-1 text-center text-xs font-bold" value="0">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex gap-2">
+                <button onclick="fecharModalDia()" class="w-1/2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl text-sm transition cursor-pointer">Cancelar</button>
+                <button id="btnSalvarDia" onclick="salvarDadosDia()" class="w-1/2 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 rounded-xl text-sm transition cursor-pointer">Salvar Dia</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Principal -->
+    <script>
+        const paletasPadrao = {
+            teal: { principal: '#0f766e', texto: '#0f766e', fundo: '#f0fdf4' },
+            blue: { principal: '#1d4ed8', texto: '#1d4ed8', fundo: '#eff6ff' },
+            purple: { principal: '#7e22ce', texto: '#7e22ce', fundo: '#faf5ff' },
+            slate: { principal: '#1e293b', texto: '#334155', fundo: '#f8fafc' },
+            rose: { principal: '#9f1239', texto: '#9f1239', fundo: '#fff1f2' }
+        };
+
+        const frasesIncentivo = [
+            "Bom dia! 'Seu povo se apresentará voluntariamente no dia da sua força militar.' Tenha um ótimo campo hoje! 🌿 (Salmo 110:3)",
+            "Cada esforço no ministério é valioso. 'Seja firme, inabalável, tendo sempre muito o que fazer na obra do Senhor.' ✨ (1 Cor. 15:58)",
+            "Aproveite o dia para declarar as boas novas! 'E estas boas novas do Reino serão pregadas em toda a terra habitada.' 📖 (Mat. 24:14)",
+            "Que Jeová abençoe seu serviço hoje. 'Não deixemos de fazer o que é bom.' ☀️ (Gál. 6:9)",
+            "Tenha um excelente campo! 'Declarem a sua glória entre as nações, as suas obras maravilhosas entre todos os povos.' 🕊️ (Salmo 96:3)",
+            "Confie na força de Jeová hoje. 'Tudo posso Naquele que me dá força.' 🛡️ (Fil. 4:13)",
+            "Compartilhe a esperança do Reino! 'Como são bonitos os pés daquele que traz boas novas de algo melhor.' 👣 (Isa. 52:7)",
+            "Mantenha a alegria no serviço. 'A alegria que vem de Jeová é a sua fortaleza.' 😊 (Neem. 8:10)",
+            "Deixe sua luz brilhar no campo. 'Deixem brilhar a sua luz perante os homens.' 💡 (Mat. 5:16)",
+            "Persevere ao pregar hoje. 'Pois Deus não é injusto para se esquecer da sua obra e do amor que vocês mostraram ao nome dele.' ⭐ (Heb. 6:10)",
+            "Seja corajoso no testemunho. 'Seja corajoso e forte... Jeová, seu Deus, está com você por onde quer que você andar.' 🦁 (Jos. 1:9)",
+            "A palavra de Deus transforma vidas. 'A palavra de Deus é viva e exerce poder.' 🗡️ (Heb. 4:12)",
+            "Semeie com generosidade. 'Quem semeia generosamente também colherá generosamente.' 🌾 (2 Cor. 9:6)",
+            "O amor move nosso ministério. 'O amor é paciente e bondoso... O amor nunca acaba.' ❤️ (1 Cor. 13:4, 8)",
+            "Dê o seu melhor a Jeová hoje. 'O que quer que façam, trabalhem nisso de todo o coração, como para Jeová.' 🔨 (Col. 3:23)",
+            "Proclame a paz às pessoas. 'Felizes os que promovem a paz.' 🕊️ (Mat. 5:9)",
+            "Confie no ensino divino. 'Eu, Jeová, sou o seu Deus, Aquele que lhe ensina o que é melhor para você.' 📘 (Isa. 48:17)",
+            "Leve consolo ao território. 'Jeová está perto dos que têm o coração quebrantado.' 🩹 (Salmo 34:18)",
+            "Seja sábio nas conversas. 'Que as suas palavras sejam sempre agradáveis, temperadas com sal.' 🧂 (Col. 4:6)",
+            "Busque primeiro o Reino neste dia! 'Persistam, pois, em buscar primeiro o Reino e a justiça de Deus.' 👑 (Mat. 6:33)",
+            "Compartilhe o nome de Deus. 'Todos os que invocarem o nome de Jeová serão salvos.' 🏷️ (Rom. 10:13)",
+            "Confie no apoio dos anjos no campo. 'Pois ele dará ordens aos seus anjos a seu respeito, para guardá-lo.' 👼 (Salmo 91:11)",
+            "Aproveite o tempo no ministério. 'Usando o seu tempo do melhor modo possível.' ⏳ (Efé. 5:16)",
+            "Faça discípulos com paciência. 'Vão e façam discípulos de pessoas de todas as nações.' 🌎 (Mat. 28:19)",
+            "A paz de Deus guiará seus passos. 'A paz de Deus, que está além de todo entendimento, guardará o seu coração.' 🕊️ (Fil. 4:7)",
+            "Fortaleça o amor pelos irmãos de campo. 'Incentivemo-nos uns aos outros ao amor e às boas obras.' 🤝 (Heb. 10:24)",
+            "Perseverança traz bênçãos! 'A perseverança deve completar a sua obra, para que vocês sejam completos.' 🧱 (Tia. 1:4)",
+            "Transmita consolo com a Bíblia. 'Para que, por meio da nossa perseverança e do consolo das Escrituras, tenhamos esperança.' 📜 (Rom. 15:4)",
+            "Sua dedicação não é em vão! 'O seu trabalho árduo não é em vão no Senhor.' 🏋️‍♂️ (1 Cor. 15:58)",
+            "Que seu dia no campo seja abençoado! 'A bênção de Jeová é o que enriquece, e Ele não acrescenta dor a ela.' 🌟 (Pro. 10:22)"
+        ];
+
+        const dataRealAtual = new Date();
+        const anoAtualReal = dataRealAtual.getFullYear();
+        const mesRealIndex = dataRealAtual.getMonth();
+        const mesRealStr = String(mesRealIndex + 1).padStart(2, '0');
+
+        let anoSelecionado = String(anoAtualReal);
+        let mesSelecionado = mesRealStr;
+        let anoMesSelecionado = `${anoSelecionado}-${mesSelecionado}`;
+        let diaEditandoAtual = null;
+
+        let modoCor = localStorage.getItem('publicador_modo_cor') || 'padrao';
+        let temaPadrao = localStorage.getItem('publicador_tema_padrao') || 'teal';
+        let coresCustom = JSON.parse(localStorage.getItem('publicador_cores_custom')) || { principal: '#0f766e', texto: '#0f766e', fundo: '#f0fdf4' };
+
+        popularSeletoresData();
+
+        document.getElementById('inputNome').value = localStorage.getItem('publicador_nome') || '';
+        document.getElementById('inputCongregacao').value = localStorage.getItem('publicador_congregacao') || '';
+        document.getElementById('inputCircuito').value = localStorage.getItem('publicador_circuito') || '';
+        document.getElementById('selectMeta').value = localStorage.getItem('publicador_meta') || '0';
+
+        document.getElementById('pickerCorPrincipal').value = coresCustom.principal;
+        document.getElementById('pickerCorTexto').value = coresCustom.texto;
+        document.getElementById('pickerCorFundo').value = coresCustom.fundo;
+
+        let dadosMes = carregarDadosDoMes(anoMesSelecionado);
+
+        // Lógica de Cronômetro
+        let startTime = 0;
+        let timerInterval = null;
+        let emAndamento = false;
+
+        alternarModoCor(modoCor);
+        atualizarInterface();
+        verificarEstadoNotificacao();
+
+        function obterFraseDoDia() {
+            const diaHoje = new Date().getDate();
+            const indice = Math.min(diaHoje - 1, frasesIncentivo.length - 1);
+            return frasesIncentivo[indice];
         }
-      } else {
-        // Iniciar
-        appState.timer.startTime = Date.now();
-        appState.timer.running = true;
-        timerInterval = setInterval(updateTimerDisplay, 1000);
-      }
-      saveLocalStorage();
-      updateTimerUI();
-    }
 
-    function resetTimer() {
-      appState.timer = { running: false, startTime: 0, accumulatedSeconds: 0 };
-      clearInterval(timerInterval);
-      saveLocalStorage();
-      updateTimerDisplay();
-      updateTimerUI();
-    }
+        function popularSeletoresData() {
+            const selectAno = document.getElementById('selectAno');
+            selectAno.innerHTML = '';
+            
+            let anoInicio = anoAtualReal - 2;
+            let anoFim = anoAtualReal + 5;
 
-    function restoreTimerState() {
-      if (appState.timer.running) {
-        timerInterval = setInterval(updateTimerDisplay, 1000);
-      }
-      updateTimerDisplay();
-      updateTimerUI();
-    }
+            for (let a = anoInicio; a <= anoFim; a++) {
+                let opt = document.createElement('option');
+                opt.value = String(a);
+                opt.text = (a === anoAtualReal) ? `${a} (Atual)` : String(a);
+                selectAno.appendChild(opt);
+            }
 
-    function updateTimerDisplay() {
-      let totalSecs = appState.timer.accumulatedSeconds;
-      if (appState.timer.running) {
-        totalSecs += Math.floor((Date.now() - appState.timer.startTime) / 1000);
-      }
-
-      const h = String(Math.floor(totalSecs / 3600)).padStart(2, '0');
-      const m = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
-      const s = String(totalSecs % 60).padStart(2, '0');
-
-      document.getElementById('timerDisplay').innerText = `${h}:${m}:${s}`;
-    }
-
-    function updateTimerUI() {
-      const btn = document.getElementById('btnStartTimer');
-      const icon = document.getElementById('timerIcon');
-      const text = document.getElementById('timerBtnText');
-      const resetBtn = document.getElementById('btnResetTimer');
-
-      if (appState.timer.running) {
-        icon.className = "fa-solid fa-pause";
-        text.innerText = "Pausar";
-        resetBtn.classList.remove('hidden');
-      } else {
-        icon.className = "fa-solid fa-play";
-        text.innerText = appState.timer.accumulatedSeconds > 0 ? "Continuar" : "Iniciar";
-        if (appState.timer.accumulatedSeconds > 0) resetBtn.classList.remove('hidden');
-        else resetBtn.classList.add('hidden');
-      }
-    }
-
-    // --- ENVIOS DE RELATÓRIO ---
-    function getReportText() {
-      const selectedMonth = document.getElementById('filterMonth').value;
-      const filtered = appState.entries.filter(e => e.date.startsWith(selectedMonth));
-      
-      let totalMinutes = 0, pubs = 0, videos = 0, revisitas = 0;
-      filtered.forEach(e => {
-        totalMinutes += e.minutes;
-        pubs += e.pubs;
-        videos += e.videos;
-        revisitas += e.revisitas;
-      });
-
-      const hours = Math.floor(totalMinutes / 60);
-
-      return `📋 *Relatório de Serviço de Campo*\n` +
-             `👤 *Publicador:* ${appState.profile.name || 'Não informado'}\n` +
-             `📅 *Mês:* ${selectedMonth}\n\n` +
-             `⏱️ *Horas:* ${hours}\n` +
-             `📚 *Publicações:* ${pubs}\n` +
-             `🎥 *Vídeos:* ${videos}\n` +
-             `🔄 *Revisitas:* ${revisitas}`;
-    }
-
-    function sendWhatsAppReport() {
-      const text = encodeURIComponent(getReportText());
-      window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
-    }
-
-    function copyForHourglass() {
-      const text = getReportText();
-      navigator.clipboard.writeText(text).then(() => {
-        alert("Relatório copiado para a área de transferência!");
-      });
-    }
-
-    // --- CONFIGURAÇÕES E MODAL ---
-    function openConfigModal() {
-      document.getElementById('cfgName').value = appState.profile.name || '';
-      document.getElementById('cfgCongregation').value = appState.profile.congregation || '';
-      document.getElementById('cfgGoal').value = appState.profile.goal || '';
-      document.getElementById('configModal').classList.remove('hidden');
-    }
-
-    function closeConfigModal() {
-      document.getElementById('configModal').classList.add('hidden');
-    }
-
-    function saveConfig() {
-      appState.profile.name = document.getElementById('cfgName').value;
-      appState.profile.congregation = document.getElementById('cfgCongregation').value;
-      appState.profile.goal = parseInt(document.getElementById('cfgGoal').value) || 0;
-      
-      saveLocalStorage();
-      renderUI();
-      closeConfigModal();
-    }
-
-    // --- CAPACITOR NOTIFICAÇÕES LOCAIS ---
-    async function requestNotificationPermission() {
-      if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
-        // Nativo via Capacitor
-        const { LocalNotifications } = window.Capacitor.Plugins;
-        const perm = await LocalNotifications.requestPermissions();
-        if (perm.display === 'granted') {
-          await LocalNotifications.schedule({
-            notifications: [{
-              title: "Meu Campo",
-              body: "Não se esqueça de registrar seu tempo de campo hoje!",
-              id: 1,
-              schedule: { on: { hour: 8, minute: 0 } }
-            }]
-          });
-          alert("Lembrete nativo agendado para as 08:00!");
+            document.getElementById('selectMes').value = mesRealStr;
+            document.getElementById('selectAno').value = String(anoAtualReal);
         }
-      } else if ("Notification" in window) {
-        // Fallback Web API
-        const perm = await Notification.requestPermission();
-        if (perm === "granted") {
-          alert("Notificações ativadas no navegador!");
-        }
-      } else {
-        alert("Notificações não são suportadas neste dispositivo.");
-      }
-    }
 
-    // --- EXPORTAR E IMPORTAR JSON ---
-    function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `meu_campo_backup_${new Date().toISOString().slice(0,10)}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-    }
+        function mudarDataSelecionada() {
+            mesSelecionado = document.getElementById('selectMes').value;
+            anoSelecionado = document.getElementById('selectAno').value;
+            anoMesSelecionado = `${anoSelecionado}-${mesSelecionado}`;
 
-    function importData(event) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const importedData = JSON.parse(e.target.result);
-          if (importedData.profile && importedData.entries) {
-            appState = importedData;
-            saveLocalStorage();
-            applyTheme(appState.profile.theme);
-            renderUI();
-            alert("Dados importados com sucesso!");
-            closeConfigModal();
-          } else {
-            alert("Arquivo JSON de backup inválido.");
-          }
-        } catch (err) {
-          alert("Erro ao ler o arquivo de backup.");
+            dadosMes = carregarDadosDoMes(anoMesSelecionado);
+            atualizarInterface();
         }
-      };
-      reader.readAsText(event.target.files[0]);
-    }
-  </script>
+
+        function abrirTelaPersonalizacao() {
+            document.getElementById('paginaInicial').classList.add('hidden');
+            document.getElementById('paginaInicial').classList.remove('flex');
+            document.getElementById('telaPersonalizacao').classList.remove('hidden');
+            document.getElementById('telaPersonalizacao').classList.add('flex');
+        }
+
+        function fecharTelaPersonalizacao() {
+            document.getElementById('telaPersonalizacao').classList.add('hidden');
+            document.getElementById('telaPersonalizacao').classList.remove('flex');
+            document.getElementById('paginaInicial').classList.remove('hidden');
+            document.getElementById('paginaInicial').classList.add('flex');
+        }
+
+        function abrirTelaSobre() {
+            document.getElementById('paginaInicial').classList.add('hidden');
+            document.getElementById('paginaInicial').classList.remove('flex');
+            document.getElementById('telaSobre').classList.remove('hidden');
+            document.getElementById('telaSobre').classList.add('flex');
+        }
+
+        function fecharTelaSobre() {
+            document.getElementById('telaSobre').classList.add('hidden');
+            document.getElementById('telaSobre').classList.remove('flex');
+            document.getElementById('paginaInicial').classList.remove('hidden');
+            document.getElementById('paginaInicial').classList.add('flex');
+        }
+
+        function copiarChavePix() {
+            const chave = document.getElementById('chavePixTexto').innerText.trim();
+            navigator.clipboard.writeText(chave).then(() => {
+                const btn = document.getElementById('btnCopiarPix');
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> Chave Copiada!`;
+                btn.classList.remove('bg-teal-600', 'hover:bg-teal-700');
+                btn.classList.add('bg-emerald-600');
+                setTimeout(() => {
+                    btn.innerHTML = `<i class="fa-solid fa-copy"></i> Copiar Chave Pix`;
+                    btn.classList.remove('bg-emerald-600');
+                    btn.classList.add('bg-teal-600', 'hover:bg-teal-700');
+                }, 2000);
+            });
+        }
+
+        function copiarEmailContato() {
+            const email = document.getElementById('emailContatoTexto').innerText.trim();
+            navigator.clipboard.writeText(email).then(() => {
+                const btn = document.getElementById('btnCopiarEmail');
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> E-mail Copiado!`;
+                btn.classList.remove('bg-slate-700', 'hover:bg-slate-800');
+                btn.classList.add('bg-emerald-600');
+                setTimeout(() => {
+                    btn.innerHTML = `<i class="fa-solid fa-copy"></i> Copiar E-mail`;
+                    btn.classList.remove('bg-emerald-600');
+                    btn.classList.add('bg-slate-700', 'hover:bg-slate-800');
+                }, 2000);
+            });
+        }
+
+        function alternarModoCor(modo) {
+            modoCor = modo;
+            localStorage.setItem('publicador_modo_cor', modo);
+
+            const btnPadrao = document.getElementById('btnModoPadrao');
+            const btnCustom = document.getElementById('btnModoCustom');
+            const painelPadrao = document.getElementById('painelModoPadrao');
+            const painelCustom = document.getElementById('painelModoCustom');
+
+            if (modo === 'padrao') {
+                btnPadrao.className = "w-1/2 py-1.5 rounded-md transition text-slate-800 bg-white shadow-xs font-bold";
+                btnCustom.className = "w-1/2 py-1.5 rounded-md transition text-slate-500 hover:text-slate-700";
+                painelPadrao.classList.remove('hidden');
+                painelCustom.classList.add('hidden');
+                painelCustom.classList.remove('flex');
+                aplicarEstilosGlobais(paletasPadrao[temaPadrao]);
+            } else {
+                btnCustom.className = "w-1/2 py-1.5 rounded-md transition text-slate-800 bg-white shadow-xs font-bold";
+                btnPadrao.className = "w-1/2 py-1.5 rounded-md transition text-slate-500 hover:text-slate-700";
+                painelPadrao.classList.add('hidden');
+                painelCustom.classList.remove('hidden');
+                painelCustom.classList.add('flex');
+                aplicarEstilosGlobais(coresCustom);
+            }
+        }
+
+        function selecionarTemaPadrao(nomeTema) {
+            temaPadrao = nomeTema;
+            localStorage.setItem('publicador_tema_padrao', nomeTema);
+            aplicarEstilosGlobais(paletasPadrao[nomeTema]);
+            renderizarCalendarioDias(anoSelecionado, mesSelecionado);
+        }
+
+        function selecionarCorDoGradiente(event) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percent = Math.max(0, Math.min(1, x / rect.width));
+
+            const hue = Math.round(percent * 360);
+            
+            const corHexPrincipal = hslToHex(hue, 80, 35);
+            const corHexTexto = hslToHex(hue, 80, 25);
+            const corHexFundo = hslToHex(hue, 80, 97);
+
+            coresCustom = { principal: corHexPrincipal, texto: corHexTexto, fundo: corHexFundo };
+
+            document.getElementById('pickerCorPrincipal').value = corHexPrincipal;
+            document.getElementById('pickerCorTexto').value = corHexTexto;
+            document.getElementById('pickerCorFundo').value = corHexFundo;
+
+            localStorage.setItem('publicador_cores_custom', JSON.stringify(coresCustom));
+            aplicarEstilosGlobais(coresCustom);
+            renderizarCalendarioDias(anoSelecionado, mesSelecionado);
+        }
+
+        function hslToHex(h, s, l) {
+            l /= 100;
+            const a = s * Math.min(l, 1 - l) / 100;
+            const f = n => {
+                const k = (n + h / 30) % 12;
+                const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+                return Math.round(255 * color).toString(16).padStart(2, '0');
+            };
+            return `#${f(0)}${f(8)}${f(4)}`;
+        }
+
+        function atualizarCorCustomizada() {
+            coresCustom = {
+                principal: document.getElementById('pickerCorPrincipal').value,
+                texto: document.getElementById('pickerCorTexto').value,
+                fundo: document.getElementById('pickerCorFundo').value
+            };
+            localStorage.setItem('publicador_cores_custom', JSON.stringify(coresCustom));
+            aplicarEstilosGlobais(coresCustom);
+            renderizarCalendarioDias(anoSelecionado, mesSelecionado);
+        }
+
+        function aplicarEstilosGlobais(c) {
+            document.getElementById('appHeader').style.backgroundColor = c.principal;
+            document.getElementById('headerPersonalizacao').style.backgroundColor = c.principal;
+            document.getElementById('headerSobre').style.backgroundColor = c.principal;
+            
+            document.getElementById('bannerFrase').style.backgroundColor = c.fundo;
+            document.getElementById('textoFrase').style.color = c.texto;
+            document.getElementById('autorFrase').style.color = c.principal;
+
+            document.getElementById('cardCronometro').style.backgroundColor = c.fundo;
+            document.getElementById('subtituloCronometro').style.color = c.texto;
+            document.getElementById('cronometroDisplay').style.color = c.texto;
+
+            if (!emAndamento) {
+                document.getElementById('btnCronometro').style.backgroundColor = c.principal;
+            }
+
+            document.getElementById('iconeHorasBg').style.backgroundColor = c.fundo;
+            document.getElementById('iconeHorasBg').style.color = c.principal;
+            document.getElementById('porcentagemMeta').style.color = c.principal;
+            document.getElementById('barraProgresso').style.backgroundColor = c.principal;
+
+            document.getElementById('nomeMesCalendario').style.backgroundColor = c.fundo;
+            document.getElementById('nomeMesCalendario').style.color = c.texto;
+            document.getElementById('iconeCalendario').style.color = c.principal;
+
+            document.getElementById('iconeGrafico').style.color = c.principal;
+            document.getElementById('iconePub').style.color = c.principal;
+            document.getElementById('iconeVid').style.color = c.principal;
+            document.getElementById('iconeRev').style.color = c.principal;
+            document.getElementById('iconeEstudos').style.color = c.principal;
+            document.getElementById('iconeNotificacao').style.color = c.principal;
+
+            const boxEstudos = document.getElementById('boxEstudos');
+            boxEstudos.style.backgroundColor = c.fundo;
+            boxEstudos.style.borderColor = c.principal + '40';
+
+            document.getElementById('modalHeader').style.backgroundColor = c.principal;
+            document.getElementById('btnSalvarDia').style.backgroundColor = c.principal;
+
+            const estaAtivado = localStorage.getItem('publicador_notificacoes_ativadas') === 'true';
+            if (!estaAtivado) {
+                document.getElementById('btnAtivarLembrete').style.backgroundColor = c.principal;
+            }
+        }
+
+        function carregarDadosDoMes(mesAno) {
+            let salvo = JSON.parse(localStorage.getItem(`relatorio_dias_${mesAno}`));
+            if (salvo) return salvo;
+            return { dias: {}, estudosAtivos: 0 };
+        }
+
+        function salvarDadosLocalStorage() {
+            localStorage.setItem(`relatorio_dias_${anoMesSelecionado}`, JSON.stringify(dadosMes));
+        }
+
+        function salvarDadosPerfil() {
+            localStorage.setItem('publicador_nome', document.getElementById('inputNome').value);
+            localStorage.setItem('publicador_congregacao', document.getElementById('inputCongregacao').value);
+            localStorage.setItem('publicador_circuito', document.getElementById('inputCircuito').value);
+        }
+
+        function alterarMeta() {
+            localStorage.setItem('publicador_meta', document.getElementById('selectMeta').value);
+            atualizarInterface();
+        }
+
+        function salvarEstudosAtivos() {
+            let val = parseInt(document.getElementById('inputEstudosAtivos').value) || 0;
+            dadosMes.estudosAtivos = val;
+            salvarDadosLocalStorage();
+        }
+
+        function atualizarInterface() {
+            let [ano, mes] = anoMesSelecionado.split('-');
+            let dataObj = new Date(ano, mes - 1, 1);
+            let nomeMesExtenso = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+            
+            document.getElementById('mesAtualText').innerText = nomeMesExtenso;
+            document.getElementById('nomeMesCalendario').innerText = dataObj.toLocaleString('pt-BR', { month: 'long' });
+
+            let totalMinutosGerais = 0;
+            let totalPub = 0;
+            let totalVid = 0;
+            let totalRev = 0;
+
+            for (let d in dadosMes.dias) {
+                let item = dadosMes.dias[d];
+                totalMinutosGerais += (item.minutos || 0);
+                totalPub += (item.pub || 0);
+                totalVid += (item.vid || 0);
+                totalRev += (item.rev || 0);
+            }
+
+            let horas = Math.floor(totalMinutosGerais / 60);
+            let mins = totalMinutosGerais % 60;
+            document.getElementById('totalHorasDisplay').innerText = `${horas}h ${mins}min`;
+
+            document.getElementById('totalPub').innerText = totalPub;
+            document.getElementById('totalVid').innerText = totalVid;
+            document.getElementById('totalRev').innerText = totalRev;
+            document.getElementById('inputEstudosAtivos').value = dadosMes.estudosAtivos || 0;
+
+            const metaHoras = parseInt(document.getElementById('selectMeta').value);
+            const containerBarra = document.getElementById('containerBarraMeta');
+            const textoPorcentagem = document.getElementById('porcentagemMeta');
+            const barra = document.getElementById('barraProgresso');
+            const msgMeta = document.getElementById('mensagemMetaConcluida');
+
+            if (metaHoras > 0) {
+                containerBarra.classList.remove('hidden');
+                let progresso = Math.min(Math.round(((totalMinutosGerais / 60) / metaHoras) * 100), 100);
+                textoPorcentagem.innerText = `(${progresso}%)`;
+                barra.style.width = `${progresso}%`;
+
+                if (totalMinutosGerais >= metaHoras * 60) {
+                    msgMeta.classList.remove('hidden');
+                } else {
+                    msgMeta.classList.add('hidden');
+                }
+            } else {
+                containerBarra.classList.add('hidden');
+                msgMeta.classList.add('hidden');
+                textoPorcentagem.innerText = '';
+            }
+
+            renderizarCalendarioDias(ano, mes);
+        }
+
+        function renderizarCalendarioDias(ano, mes) {
+            const grid = document.getElementById('gridCalendarioDias');
+            grid.innerHTML = '';
+
+            let totalDiasNoMes = new Date(ano, mes, 0).getDate();
+            const diasSemanaNomes = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const c = (modoCor === 'padrao') ? paletasPadrao[temaPadrao] : coresCustom;
+
+            for (let dia = 1; dia <= totalDiasNoMes; dia++) {
+                let dataDiaObj = new Date(ano, mes - 1, dia);
+                let nomeDiaSemana = diasSemanaNomes[dataDiaObj.getDay()];
+                
+                let dadosDoDia = dadosMes.dias[dia] || {};
+                let minDia = dadosDoDia.minutos || 0;
+                let hD = Math.floor(minDia / 60);
+                let mD = minDia % 60;
+                let temHoras = minDia > 0;
+
+                let div = document.createElement('div');
+                div.className = `border rounded-xl p-2 flex flex-col items-center justify-between cursor-pointer transition text-center shadow-xs`;
+                
+                if (temHoras) {
+                    div.style.backgroundColor = c.fundo;
+                    div.style.borderColor = c.principal + '80';
+                } else {
+                    div.style.backgroundColor = '#ffffff';
+                    div.style.borderColor = '#e2e8f0';
+                }
+
+                div.onclick = () => abrirModalDia(dia, nomeDiaSemana);
+
+                div.innerHTML = `
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">${nomeDiaSemana}</span>
+                    <span class="text-sm font-bold text-slate-700">${dia}</span>
+                    <span class="text-[10px] font-mono font-bold" style="color: ${temHoras ? c.texto : '#94a3b8'}">${hD}h${mD > 0 ? mD+'m':''}</span>
+                `;
+                grid.appendChild(div);
+            }
+        }
+
+        function abrirModalDia(dia, nomeDiaSemana) {
+            diaEditandoAtual = dia;
+            let [ano, mes] = anoMesSelecionado.split('-');
+            document.getElementById('modalTituloData').innerText = `Dia ${dia} de ${new Date(ano, mes-1, dia).toLocaleString('pt-BR', { month: 'long' })} (${nomeDiaSemana})`;
+
+            let dadosDoDia = dadosMes.dias[dia] || { minutos: 0, casa: 0, carrinho: 0, display: 0, cartas: 0, estudo: 0, outros: 0, pub: 0, vid: 0, rev: 0 };
+
+            document.getElementById('modCasa').value = dadosDoDia.casa || '';
+            document.getElementById('modCarrinho').value = dadosDoDia.carrinho || '';
+            document.getElementById('modDisplay').value = dadosDoDia.display || '';
+            document.getElementById('modCartas').value = dadosDoDia.cartas || '';
+            document.getElementById('modEstudo').value = dadosDoDia.estudo || '';
+            document.getElementById('modOutros').value = dadosDoDia.outros || '';
+
+            document.getElementById('modalPub').value = dadosDoDia.pub || 0;
+            document.getElementById('modalVid').value = dadosDoDia.vid || 0;
+            document.getElementById('modalRev').value = dadosDoDia.rev || 0;
+
+            recalcularTempoModalidades();
+            document.getElementById('modalDia').classList.remove('hidden');
+        }
+
+        function adicionarMinutos(inputId, quantidade) {
+            const input = document.getElementById(inputId);
+            let valAtual = parseInt(input.value) || 0;
+            input.value = valAtual + quantidade;
+            recalcularTempoModalidades();
+        }
+
+        function recalcularTempoModalidades() {
+            let casa = parseInt(document.getElementById('modCasa').value) || 0;
+            let carrinho = parseInt(document.getElementById('modCarrinho').value) || 0;
+            let display = parseInt(document.getElementById('modDisplay').value) || 0;
+            let cartas = parseInt(document.getElementById('modCartas').value) || 0;
+            let estudo = parseInt(document.getElementById('modEstudo').value) || 0;
+            let outros = parseInt(document.getElementById('modOutros').value) || 0;
+
+            let somaMinutos = casa + carrinho + display + cartas + estudo + outros;
+
+            let h = Math.floor(somaMinutos / 60);
+            let m = somaMinutos % 60;
+
+            document.getElementById('modalHoras').value = h;
+            document.getElementById('modalMinutos').value = m;
+        }
+
+        function fecharModalDia() {
+            document.getElementById('modalDia').classList.add('hidden');
+            diaEditandoAtual = null;
+        }
+
+        function salvarDadosDia() {
+            if (diaEditandoAtual === null) return;
+
+            let casa = parseInt(document.getElementById('modCasa').value) || 0;
+            let carrinho = parseInt(document.getElementById('modCarrinho').value) || 0;
+            let display = parseInt(document.getElementById('modDisplay').value) || 0;
+            let cartas = parseInt(document.getElementById('modCartas').value) || 0;
+            let estudo = parseInt(document.getElementById('modEstudo').value) || 0;
+            let outros = parseInt(document.getElementById('modOutros').value) || 0;
+
+            let minutosTotal = casa + carrinho + display + cartas + estudo + outros;
+
+            let pub = parseInt(document.getElementById('modalPub').value) || 0;
+            let vid = parseInt(document.getElementById('modalVid').value) || 0;
+            let rev = parseInt(document.getElementById('modalRev').value) || 0;
+
+            dadosMes.dias[diaEditandoAtual] = {
+                minutos: minutosTotal,
+                casa, carrinho, display, cartas, estudo, outros,
+                pub, vid, rev
+            };
+
+            salvarDadosLocalStorage();
+            fecharModalDia();
+            atualizarInterface();
+        }
+
+        function alternarCronometro() {
+            const btn = document.getElementById('btnCronometro');
+            const icone = document.getElementById('iconePlayPause');
+            const texto = document.getElementById('textoBotaoCronometro');
+
+            if (!emAndamento) {
+                emAndamento = true;
+                startTime = Date.now();
+                icone.className = "fa-solid fa-pause";
+                texto.innerText = "Pausar e Salvar";
+                btn.style.backgroundColor = '#d97706';
+
+                timerInterval = setInterval(() => {
+                    let decorridoSeg = Math.floor((Date.now() - startTime) / 1000);
+                    let h = Math.floor(decorridoSeg / 3600).toString().padStart(2, '0');
+                    let m = Math.floor((decorridoSeg % 3600) / 60).toString().padStart(2, '0');
+                    let s = (decorridoSeg % 60).toString().padStart(2, '0');
+                    document.getElementById('cronometroDisplay').innerText = `${h}:${m}:${s}`;
+                }, 1000);
+            } else {
+                clearInterval(timerInterval);
+                emAndamento = false;
+                icone.className = "fa-solid fa-play";
+                texto.innerText = "Iniciar Campo Agora";
+                
+                const c = (modoCor === 'padrao') ? paletasPadrao[temaPadrao] : coresCustom;
+                btn.style.backgroundColor = c.principal;
+
+                let decorridoSeg = Math.floor((Date.now() - startTime) / 1000);
+                let minutosTrabalhados = Math.round(decorridoSeg / 60);
+
+                if (minutosTrabalhados > 0) {
+                    let hojeStr = String(dataRealAtual.getDate());
+                    let mesRealString = `${anoAtualReal}-${mesRealStr}`;
+                    
+                    if (anoMesSelecionado === mesRealString) {
+                        if (!dadosMes.dias[hojeStr]) {
+                            dadosMes.dias[hojeStr] = { minutos: 0, pub: 0, vid: 0, rev: 0 };
+                        }
+                        dadosMes.dias[hojeStr].outros = (dadosMes.dias[hojeStr].outros || 0) + minutosTrabalhados;
+                        dadosMes.dias[hojeStr].minutos = (dadosMes.dias[hojeStr].minutos || 0) + minutosTrabalhados;
+                        salvarDadosLocalStorage();
+                        atualizarInterface();
+                        alert(`Adicionados ${minutosTrabalhados} minutos ao dia de hoje (${hojeStr}) com sucesso!`);
+                    } else {
+                        alert(`Cronômetro finalizado (${minutosTrabalhados} min), mas você está visualizando um mês/ano diferente do atual.`);
+                    }
+                }
+                document.getElementById('cronometroDisplay').innerText = "00:00:00";
+            }
+        }
+
+        function gerarTextoRelatorio() {
+            let nomePublicador = document.getElementById('inputNome').value.trim();
+            let congregacao = document.getElementById('inputCongregacao').value.trim();
+            let circuito = document.getElementById('inputCircuito').value.trim();
+
+            let cabecalho = '';
+            if (nomePublicador) cabecalho += `👤 *Publicador:* ${nomePublicador}\n`;
+            if (congregacao) cabecalho += `🏛️ *Congregação:* ${congregacao}\n`;
+            if (circuito) cabecalho += `📍 *Circuito:* ${circuito}\n`;
+
+            let [ano, mes] = anoMesSelecionado.split('-');
+            let dataObj = new Date(ano, mes - 1, 1);
+            let nomeMesFormatado = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+
+            let totalMinutosGerais = 0;
+            let totalPub = 0;
+            let totalVid = 0;
+            let totalRev = 0;
+
+            for (let d in dadosMes.dias) {
+                let item = dadosMes.dias[d];
+                totalMinutosGerais += (item.minutos || 0);
+                totalPub += (item.pub || 0);
+                totalVid += (item.vid || 0);
+                totalRev += (item.rev || 0);
+            }
+
+            let horas = Math.floor(totalMinutosGerais / 60);
+            let mins = totalMinutosGerais % 60;
+            let horasTexto = `${horas}h ${mins}min`;
+
+            let estudosAtivos = dadosMes.estudosAtivos || 0;
+
+            return `*Relatório de Serviço - ${nomeMesFormatado}*\n` +
+                   (cabecalho ? `${cabecalho}\n` : '\n') +
+                   `⏱️ *Horas:* ${horasTexto}\n` +
+                   `📄 *Publicações:* ${totalPub}\n` +
+                   `🎬 *Vídeos:* ${totalVid}\n` +
+                   `🔄 *Revisitas:* ${totalRev}\n` +
+                   `📖 *Estudos Bíblicos Ativos:* ${estudosAtivos}`;
+        }
+
+        function enviarWhatsApp() {
+            let textoMensagem = gerarTextoRelatorio();
+            let urlWp = `https://wa.me/?text=${encodeURIComponent(textoMensagem)}`;
+            window.open(urlWp, '_blank');
+        }
+
+        function copiarParaHourglass() {
+            let textoMensagem = gerarTextoRelatorio();
+            navigator.clipboard.writeText(textoMensagem).then(() => {
+                const btn = document.getElementById('btnCopiarHourglass');
+                btn.innerHTML = `<i class="fa-solid fa-check text-lg"></i> Relatório Copiado!`;
+                btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                btn.classList.add('bg-emerald-600');
+                
+                setTimeout(() => {
+                    btn.innerHTML = `<i class="fa-solid fa-copy text-lg"></i> Copiar Dados para o Hourglass`;
+                    btn.classList.remove('bg-emerald-600');
+                    btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                }, 2500);
+            });
+        }
+
+        /* --- Lógica dos Lembretes Nativos via Capacitor --- */
+
+        async function toggleLembreteDiario() {
+            const estaAtivado = localStorage.getItem('publicador_notificacoes_ativadas') === 'true';
+
+            if (estaAtivado) {
+                localStorage.setItem('publicador_notificacoes_ativadas', 'false');
+                if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
+                    await window.Capacitor.Plugins.LocalNotifications.cancel({ notifications: [{ id: 101 }] });
+                }
+                atualizarUIIncentivo(false);
+            } else {
+                if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
+                    const status = await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
+                    if (status.display === 'granted') {
+                        await agendarNotificacaoNativaCapacitor();
+                        localStorage.setItem('publicador_notificacoes_ativadas', 'true');
+                        atualizarUIIncentivo(true);
+                    } else {
+                        alert("Permissão para enviar notificações foi negada.");
+                    }
+                } else {
+                    alert("A funcionalidade de notificação requer a execução do app nativo via Capacitor.");
+                }
+            }
+        }
+
+        async function agendarNotificacaoNativaCapacitor() {
+            const fraseDoDia = obterFraseDoDia();
+            await window.Capacitor.Plugins.LocalNotifications.schedule({
+                notifications: [
+                    {
+                        title: "Serviço de Campo 🌿",
+                        body: fraseDoDia,
+                        id: 101,
+                        schedule: {
+                            on: { hour: 8, minute: 0 },
+                            repeats: true
+                        }
+                    }
+                ]
+            });
+        }
+
+        function verificarEstadoNotificacao() {
+            const estaAtivado = localStorage.getItem('publicador_notificacoes_ativadas') === 'true';
+            atualizarUIIncentivo(estaAtivado);
+        }
+
+        function atualizarUIIncentivo(ativo) {
+            const badge = document.getElementById('statusNotificacao');
+            const btn = document.getElementById('btnAtivarLembrete');
+            const textoBtn = document.getElementById('textoBtnLembrete');
+            const c = (modoCor === 'padrao') ? paletasPadrao[temaPadrao] : coresCustom;
+
+            if (ativo) {
+                badge.innerText = "Ativo";
+                badge.className = "text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md";
+                textoBtn.innerText = "Desativar Lembrete Diário";
+                btn.style.backgroundColor = "#dc2626";
+            } else {
+                badge.innerText = "Desativado";
+                badge.className = "text-[10px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md";
+                textoBtn.innerText = "Ativar Lembrete Diário";
+                btn.style.backgroundColor = c.principal;
+            }
+        }
+    </script>
 </body>
 </html>
