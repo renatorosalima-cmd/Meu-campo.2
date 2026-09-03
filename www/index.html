@@ -522,7 +522,7 @@
             "Confie no ensino divino. 'Eu, Jeová, sou o seu Deus, Aquele que lhe ensina o que é melhor para você.' 📘 (Isa. 48:17)",
             "Leve consolo ao território. 'Jeová está perto dos que têm o coração quebrantado.' 🩹 (Salmo 34:18)",
             "Seja sábio nas conversas. 'Que as suas palavras sejam sempre agradáveis, temperadas com sal.' 🧂 (Col. 4:6)",
-            "Busque primeiro o Reino neste dia! 'Persistam, pois, em buscar primeiro o Reino e a justiça de Deus.' 👑 (Mat. 6:33)",
+            "Busque primeiro o Reino! 'Persistam, pois, em buscar primeiro o Reino e a justiça de Deus.' 👑 (Mat. 6:33)",
             "Compartilhe o nome de Deus. 'Todos os que invocarem o nome de Jeová serão salvos.' 🏷️ (Rom. 10:13)",
             "Confie no apoio dos anjos no campo. 'Pois ele dará ordens aos seus anjos a seu respeito, para guardá-lo.' 👼 (Salmo 91:11)",
             "Aproveite o tempo no ministério. 'Usando o seu tempo do melhor modo possível.' ⏳ (Efé. 5:16)",
@@ -571,10 +571,21 @@
         atualizarInterface();
         verificarEstadoNotificacao();
 
+        // Cada dia (contado desde uma data-base fixa) escolhe uma frase do array,
+        // ciclando pelas 30 frases aprovadas sem nunca inventar ou pular nenhuma.
+        function obterIndiceFraseParaData(dataAlvo) {
+            const dataBase = new Date(2025, 0, 1); // data-base fixa e arbitrária, só para gerar um contador crescente de dias
+            const diasDesdeBase = Math.floor((dataAlvo - dataBase) / (1000 * 60 * 60 * 24));
+            const indice = ((diasDesdeBase % frasesIncentivo.length) + frasesIncentivo.length) % frasesIncentivo.length;
+            return indice;
+        }
+
+        function obterFraseParaData(dataAlvo) {
+            return frasesIncentivo[obterIndiceFraseParaData(dataAlvo)];
+        }
+
         function obterFraseDoDia() {
-            const diaHoje = new Date().getDate();
-            const indice = Math.min(diaHoje - 1, frasesIncentivo.length - 1);
-            return frasesIncentivo[indice];
+            return obterFraseParaData(new Date());
         }
 
         function popularSeletoresData() {
@@ -1103,6 +1114,15 @@
         }
 
         /* --- Lógica dos Lembretes Nativos via Capacitor --- */
+        // CORREÇÃO: em vez de UMA notificação repetida (que sempre usava a
+        // mesma frase, travada no momento da ativação), agendamos várias
+        // notificações individuais, uma por dia, cada uma já com a frase
+        // certa daquele dia (ciclando pelas 30 frases aprovadas). O lote é
+        // renovado sempre que o app é aberto, para nunca ficar sem dias
+        // futuros agendados.
+
+        const DIAS_PARA_AGENDAR = 60; // agenda os próximos 60 dias de notificações
+        const ID_BASE_NOTIFICACAO = 1000; // ids 1000..1059, um por dia agendado
 
         async function toggleLembreteDiario() {
             const estaAtivado = localStorage.getItem('publicador_notificacoes_ativadas') === 'true';
@@ -1110,14 +1130,14 @@
             if (estaAtivado) {
                 localStorage.setItem('publicador_notificacoes_ativadas', 'false');
                 if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
-                    await window.Capacitor.Plugins.LocalNotifications.cancel({ notifications: [{ id: 101 }] });
+                    await cancelarLoteDeNotificacoes();
                 }
                 atualizarUIIncentivo(false);
             } else {
                 if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
                     const status = await window.Capacitor.Plugins.LocalNotifications.requestPermissions();
                     if (status.display === 'granted') {
-                        await agendarNotificacaoNativaCapacitor();
+                        await agendarLoteDeNotificacoes();
                         localStorage.setItem('publicador_notificacoes_ativadas', 'true');
                         atualizarUIIncentivo(true);
                     } else {
@@ -1129,26 +1149,56 @@
             }
         }
 
-        async function agendarNotificacaoNativaCapacitor() {
-            const fraseDoDia = obterFraseDoDia();
-            await window.Capacitor.Plugins.LocalNotifications.schedule({
-                notifications: [
-                    {
-                        title: "Serviço de Campo 🌿",
-                        body: fraseDoDia,
-                        id: 101,
-                        schedule: {
-                            on: { hour: 8, minute: 0 },
-                            repeats: true
-                        }
-                    }
-                ]
-            });
+        function montarListaDeNotificacoes() {
+            const notificacoes = [];
+            const hoje = new Date();
+
+            for (let i = 0; i < DIAS_PARA_AGENDAR; i++) {
+                const dataAlvo = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() + i, 8, 0, 0, 0);
+
+                // Se já passou das 8h de hoje, o primeiro disparo (i = 0) fica para amanhã
+                if (i === 0 && dataAlvo.getTime() <= Date.now()) {
+                    continue;
+                }
+
+                notificacoes.push({
+                    title: "Serviço de Campo 🌿",
+                    body: obterFraseParaData(dataAlvo),
+                    id: ID_BASE_NOTIFICACAO + i,
+                    schedule: { at: dataAlvo, allowWhileIdle: true }
+                });
+            }
+            return notificacoes;
+        }
+
+        async function agendarLoteDeNotificacoes() {
+            // Garante que não fiquem duplicadas de um agendamento anterior
+            await cancelarLoteDeNotificacoes();
+
+            const notificacoes = montarListaDeNotificacoes();
+            if (notificacoes.length > 0) {
+                await window.Capacitor.Plugins.LocalNotifications.schedule({ notifications: notificacoes });
+            }
+        }
+
+        async function cancelarLoteDeNotificacoes() {
+            const idsParaCancelar = [];
+            for (let i = 0; i < DIAS_PARA_AGENDAR; i++) {
+                idsParaCancelar.push({ id: ID_BASE_NOTIFICACAO + i });
+            }
+            await window.Capacitor.Plugins.LocalNotifications.cancel({ notifications: idsParaCancelar });
         }
 
         function verificarEstadoNotificacao() {
             const estaAtivado = localStorage.getItem('publicador_notificacoes_ativadas') === 'true';
             atualizarUIIncentivo(estaAtivado);
+
+            // Sempre que o app abre com o lembrete já ativado, renova o lote
+            // de notificações futuras (garante que nunca fique sem dias
+            // agendados à frente, mesmo que o app fique dias sem ser aberto).
+            if (estaAtivado && window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
+                agendarLoteDeNotificacoes();
+            }
         }
 
         function atualizarUIIncentivo(ativo) {
