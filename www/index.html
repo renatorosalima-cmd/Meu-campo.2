@@ -492,6 +492,22 @@
         </div>
     </div>
 
+    <!-- MODAL DA FRASE DO DIA (aberto ao tocar na notificação) -->
+    <div id="modalFraseDia" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
+            <div id="modalFraseHeader" class="bg-teal-700 text-white p-4 flex justify-between items-center transition-colors">
+                <h3 class="font-bold text-base flex items-center gap-2"><i class="fa-solid fa-seedling"></i> Serviço de Campo</h3>
+                <button onclick="fecharModalFraseDia()" class="text-white/80 hover:text-white cursor-pointer text-lg"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 flex flex-col gap-4 bg-white">
+                <p id="textoFraseModal" class="text-sm text-slate-700 leading-relaxed font-serif italic"></p>
+            </div>
+            <div class="bg-slate-50 p-4 border-t border-slate-200">
+                <button onclick="fecharModalFraseDia()" id="btnFecharFrase" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2.5 rounded-xl text-sm transition cursor-pointer">Entendido</button>
+            </div>
+        </div>
+    </div>
+
     <!-- JavaScript Principal -->
     <script>
         const paletasPadrao = {
@@ -522,7 +538,7 @@
             "Confie no ensino divino. 'Eu, Jeová, sou o seu Deus, Aquele que lhe ensina o que é melhor para você.' 📘 (Isa. 48:17)",
             "Leve consolo ao território. 'Jeová está perto dos que têm o coração quebrantado.' 🩹 (Salmo 34:18)",
             "Seja sábio nas conversas. 'Que as suas palavras sejam sempre agradáveis, temperadas com sal.' 🧂 (Col. 4:6)",
-            "Busque primeiro o Reino! 'Persistam, pois, em buscar primeiro o Reino e a justiça de Deus.' 👑 (Mat. 6:33)",
+            "Busque primeiro o Reino neste dia! 'Persistam, pois, em buscar primeiro o Reino e a justiça de Deus.' 👑 (Mat. 6:33)",
             "Compartilhe o nome de Deus. 'Todos os que invocarem o nome de Jeová serão salvos.' 🏷️ (Rom. 10:13)",
             "Confie no apoio dos anjos no campo. 'Pois ele dará ordens aos seus anjos a seu respeito, para guardá-lo.' 👼 (Salmo 91:11)",
             "Aproveite o tempo no ministério. 'Usando o seu tempo do melhor modo possível.' ⏳ (Efé. 5:16)",
@@ -570,6 +586,33 @@
         alternarModoCor(modoCor);
         atualizarInterface();
         verificarEstadoNotificacao();
+        registrarListenerDeNotificacaoTocada();
+
+        // Quando o usuário toca na notificação (com o app fechado ou em segundo
+        // plano), o Android abre o app mas não mostra o texto completo da
+        // notificação em lugar nenhum. Esse listener detecta esse toque e abre
+        // um modal dentro do próprio app com a frase completa do dia.
+        function registrarListenerDeNotificacaoTocada() {
+            if (window.Capacitor && window.Capacitor.Plugins.LocalNotifications) {
+                window.Capacitor.Plugins.LocalNotifications.addListener('localNotificationActionPerformed', (acao) => {
+                    const notificacao = acao.notification;
+                    const textoCompleto = (notificacao && notificacao.body) ? notificacao.body : obterFraseDoDia();
+                    abrirModalFraseDia(textoCompleto);
+                });
+            }
+        }
+
+        function abrirModalFraseDia(texto) {
+            document.getElementById('textoFraseModal').innerText = texto;
+            document.getElementById('modalFraseDia').classList.remove('hidden');
+            const c = (modoCor === 'padrao') ? paletasPadrao[temaPadrao] : coresCustom;
+            document.getElementById('modalFraseHeader').style.backgroundColor = c.principal;
+            document.getElementById('btnFecharFrase').style.backgroundColor = c.principal;
+        }
+
+        function fecharModalFraseDia() {
+            document.getElementById('modalFraseDia').classList.add('hidden');
+        }
 
         // Cada dia (contado desde uma data-base fixa) escolhe uma frase do array,
         // ciclando pelas 30 frases aprovadas sem nunca inventar ou pular nenhuma.
