@@ -1229,6 +1229,10 @@
             for (let i = 0; i < DIAS_PARA_AGENDAR; i++) {
                 idsParaCancelar.push({ id: ID_BASE_NOTIFICACAO + i });
             }
+            // Cancela também a notificação antiga (id 101), do sistema anterior
+            // que repetia sempre a mesma frase e nunca foi removida ao migrar
+            // para o novo formato de uma notificação por dia.
+            idsParaCancelar.push({ id: 101 });
             await window.Capacitor.Plugins.LocalNotifications.cancel({ notifications: idsParaCancelar });
         }
 
